@@ -1,3 +1,4 @@
+import { getOrCreateSimulationContext } from "@/lib/db/simulationContext";
 import { getSupabaseServiceClient } from "@/lib/db/supabase";
 import { mutateStore } from "@/lib/db/store";
 import { buildEvent } from "@/lib/events/eventBuilder";
@@ -15,9 +16,6 @@ import {
 } from "@/lib/schemas";
 import { runAgentTurn } from "@/lib/simulation/agentLoop";
 import { buildWorldStateUpdate } from "@/lib/world/worldUpdate";
-
-const DEFAULT_WORLD_BRIEF =
-  "The citadel is a tiny digital polity testing how coordination, rumor, and skepticism shape trust over repeated cycles.";
 
 export type RunCycleResult = {
   cycleRun: CycleRun;
@@ -58,9 +56,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     return runCycleInMemory(input);
   }
 
+  const context = await getOrCreateSimulationContext();
+  const sessionId = context.sessionId;
+
   const previousWorldResult = await supabase
     .from("world_state")
     .select("*")
+    .eq("session_id", sessionId)
     .order("cycle_number", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -98,24 +100,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     }) satisfies Agent,
   );
 
-  const configResult = await supabase.from("simulation_config").select("*").eq("id", "default").maybeSingle();
-  if (configResult.error) {
-    throw new Error(`Failed reading simulation_config: ${configResult.error.message}`);
-  }
-
-  if (!configResult.data) {
-    const { error: initConfigError } = await supabase.from("simulation_config").insert({
-      id: "default",
-      world_brief: DEFAULT_WORLD_BRIEF,
-      updated_at: new Date().toISOString(),
-    });
-
-    if (initConfigError) {
-      throw new Error(`Failed seeding simulation_config: ${initConfigError.message}`);
-    }
-  }
-
-  const worldBriefStored = configResult.data?.world_brief ?? DEFAULT_WORLD_BRIEF;
+  const worldBriefStored = context.worldBrief;
   const scenarioLabel = input.scenarioLabel?.trim() || "default";
   const worldBriefUsed = input.worldBrief?.trim() || worldBriefStored;
 
@@ -134,6 +119,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
   const { error: cycleInsertError } = await supabase.from("cycle_runs").insert({
     id: cycleRun.id,
+    session_id: sessionId,
     cycle_number: cycleRun.cycle_number,
     status: cycleRun.status,
     started_at: cycleRun.started_at,
@@ -150,6 +136,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
   await supabase.from("event_logs").insert({
     id: crypto.randomUUID(),
+    session_id: sessionId,
     cycle_number: cycleNumber,
     event_type: "cycle_started",
     source_agent_id: null,
@@ -176,6 +163,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     const recentFeedResult = await supabase
       .from("feed_posts")
       .select("content, created_at")
+      .eq("session_id", sessionId)
       .order("created_at", { ascending: false })
       .limit(8);
 
@@ -186,6 +174,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     const recentMemoriesResult = await supabase
       .from("agent_memories")
       .select("content, created_at")
+      .eq("session_id", sessionId)
       .eq("agent_id", effectiveAgent.id)
       .order("created_at", { ascending: false })
       .limit(6);
@@ -211,6 +200,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
     await supabase.from("event_logs").insert({
       id: crypto.randomUUID(),
+      session_id: sessionId,
       cycle_number: cycleNumber,
       event_type: "agent_action",
       source_agent_id: effectiveAgent.id,
@@ -229,6 +219,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
       await supabase.from("feed_posts").insert({
         id: crypto.randomUUID(),
+        session_id: sessionId,
         cycle_number: cycleNumber,
         agent_id: effectiveAgent.id,
         post_type: turn.postType,
@@ -238,6 +229,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
       await supabase.from("event_logs").insert({
         id: crypto.randomUUID(),
+        session_id: sessionId,
         cycle_number: cycleNumber,
         event_type: "feed_post_created",
         source_agent_id: effectiveAgent.id,
@@ -259,6 +251,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
     await supabase.from("agent_memories").insert({
       id: memoryEntry.id,
+      session_id: sessionId,
       agent_id: memoryEntry.agent_id,
       memory_type: memoryEntry.memory_type,
       content: memoryEntry.content,
@@ -269,6 +262,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
     await supabase.from("event_logs").insert({
       id: crypto.randomUUID(),
+      session_id: sessionId,
       cycle_number: cycleNumber,
       event_type: "memory_updated",
       source_agent_id: effectiveAgent.id,
@@ -297,6 +291,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
   await supabase.from("world_state").insert({
     id: worldState.id,
+    session_id: sessionId,
     cycle_number: worldState.cycle_number,
     summary: worldState.summary,
     cohesion: worldState.cohesion,
@@ -309,6 +304,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
   await supabase.from("event_logs").insert({
     id: crypto.randomUUID(),
+    session_id: sessionId,
     cycle_number: cycleNumber,
     event_type: "world_state_changed",
     source_agent_id: null,
@@ -362,6 +358,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   await supabase.from("cycle_run_summaries").upsert(
     {
       cycle_run_id: completedCycleRun.id,
+      session_id: sessionId,
       cycle_number: runSummary.cycleNumber,
       scenario_label: runSummary.scenarioLabel,
       world_brief_used: runSummary.worldBriefUsed,
@@ -369,11 +366,12 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       delta: runSummary.delta,
       agents_used: runSummary.agentsUsed,
     },
-    { onConflict: "cycle_number" },
+    { onConflict: "session_id,cycle_number" },
   );
 
   await supabase.from("event_logs").insert({
     id: crypto.randomUUID(),
+    session_id: sessionId,
     cycle_number: cycleNumber,
     event_type: "cycle_finished",
     source_agent_id: null,

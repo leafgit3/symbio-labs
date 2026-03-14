@@ -64,7 +64,7 @@ supabase db query < supabase/seed.sql
 - world brief editing
 - scenario label input
 - cycle execution
-- simulation reset (clears cycle history, feed, events, memories; keeps agents)
+- simulation reset (creates a new active session/blank slate while preserving prior sessions in DB)
 - live world/feed/event state
 - latest run summary (scenario + deltas + post count)
 
@@ -82,6 +82,7 @@ supabase db query < supabase/seed.sql
 - per-cycle deltas and brief used
 - agents/roles/traits used in that cycle
 - feed/event/memory counts
+- scoped to the currently active simulation session
 
 ## API Surfaces
 

@@ -1,4 +1,5 @@
 import { mutateStore, readStore } from "@/lib/db/store";
+import { createSimulationSession, getOrCreateSimulationContext } from "@/lib/db/simulationContext";
 import { getSupabaseServiceClient } from "@/lib/db/supabase";
 import {
   Agent,
@@ -20,9 +21,6 @@ import {
   WorldState,
   WorldStateSchema,
 } from "@/lib/schemas";
-
-const DEFAULT_WORLD_BRIEF =
-  "The citadel is a tiny digital polity testing how coordination, rumor, and skepticism shape trust over repeated cycles.";
 
 const BASELINE_WORLD_SUMMARY = "Bootstrapped world. Metrics are neutral and observable.";
 const BASELINE_CYCLE_SUMMARY = "Simulation reset baseline.";
@@ -71,9 +69,12 @@ export async function getWorldStateCurrent(): Promise<WorldState> {
     return store.worldStates[store.worldStates.length - 1];
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("world_state")
     .select("*")
+    .eq("session_id", sessionId)
     .order("cycle_number", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -254,34 +255,19 @@ export async function resetSimulationState(): Promise<{ cycleRun: CycleRun; worl
     });
   }
 
-  const deleteSummaries = await supabase.from("cycle_run_summaries").delete().gte("cycle_number", 0);
-  if (deleteSummaries.error) {
-    throw new Error(`Failed clearing cycle_run_summaries: ${deleteSummaries.error.message}`);
-  }
+  await getOrCreateSimulationContext();
+  const sessionId = await createSimulationSession("reset");
 
-  const deleteEvents = await supabase.from("event_logs").delete().gte("cycle_number", 0);
-  if (deleteEvents.error) {
-    throw new Error(`Failed clearing event_logs: ${deleteEvents.error.message}`);
-  }
+  const activateSession = await supabase
+    .from("simulation_config")
+    .update({
+      active_session_id: sessionId,
+      updated_at: now,
+    })
+    .eq("id", "default");
 
-  const deleteFeed = await supabase.from("feed_posts").delete().gte("cycle_number", 0);
-  if (deleteFeed.error) {
-    throw new Error(`Failed clearing feed_posts: ${deleteFeed.error.message}`);
-  }
-
-  const deleteMemories = await supabase.from("agent_memories").delete().not("id", "is", null);
-  if (deleteMemories.error) {
-    throw new Error(`Failed clearing agent_memories: ${deleteMemories.error.message}`);
-  }
-
-  const deleteCycles = await supabase.from("cycle_runs").delete().gte("cycle_number", 0);
-  if (deleteCycles.error) {
-    throw new Error(`Failed clearing cycle_runs: ${deleteCycles.error.message}`);
-  }
-
-  const deleteWorld = await supabase.from("world_state").delete().gte("cycle_number", 0);
-  if (deleteWorld.error) {
-    throw new Error(`Failed clearing world_state: ${deleteWorld.error.message}`);
+  if (activateSession.error) {
+    throw new Error(`Failed activating reset session: ${activateSession.error.message}`);
   }
 
   const resetAgents = await supabase
@@ -300,6 +286,7 @@ export async function resetSimulationState(): Promise<{ cycleRun: CycleRun; worl
 
   const insertWorld = await supabase.from("world_state").insert({
     id: worldState.id,
+    session_id: sessionId,
     cycle_number: worldState.cycle_number,
     summary: worldState.summary,
     cohesion: worldState.cohesion,
@@ -316,6 +303,7 @@ export async function resetSimulationState(): Promise<{ cycleRun: CycleRun; worl
 
   const insertCycle = await supabase.from("cycle_runs").insert({
     id: cycleRun.id,
+    session_id: sessionId,
     cycle_number: cycleRun.cycle_number,
     status: cycleRun.status,
     started_at: cycleRun.started_at,
@@ -340,9 +328,12 @@ export async function getAgentMemories(limit = 200): Promise<AgentMemory[]> {
       .slice(0, limit);
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("agent_memories")
     .select("*")
+    .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -368,9 +359,12 @@ export async function getFeedPosts(limit = 50): Promise<FeedPost[]> {
       .slice(0, limit);
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("feed_posts")
     .select("*")
+    .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -395,9 +389,12 @@ export async function getEventLogs(limit = 120): Promise<EventLog[]> {
       .slice(0, limit);
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("event_logs")
     .select("*")
+    .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -421,9 +418,12 @@ export async function getLatestCycleRun(): Promise<CycleRun> {
     return store.cycleRuns[store.cycleRuns.length - 1];
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("cycle_runs")
     .select("*")
+    .eq("session_id", sessionId)
     .order("cycle_number", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -447,38 +447,20 @@ export async function getWorldBriefConfig(): Promise<SimulationConfig> {
     return SimulationConfigSchema.parse(store.simulationConfig);
   }
 
-  const { data, error } = await supabase.from("simulation_config").select("*").eq("id", "default").maybeSingle();
+  const context = await getOrCreateSimulationContext();
 
-  if (error) {
-    throw new Error(`Failed to read simulation_config: ${error.message}`);
-  }
+  const { data, error } = await supabase
+    .from("simulation_config")
+    .select("updated_at")
+    .eq("id", "default")
+    .single();
 
-  if (!data) {
-    const now = new Date().toISOString();
-    const seed = {
-      id: "default",
-      world_brief: DEFAULT_WORLD_BRIEF,
-      updated_at: now,
-    };
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("simulation_config")
-      .insert(seed)
-      .select("*")
-      .single();
-
-    if (insertError || !inserted) {
-      throw new Error(`Failed to initialize simulation_config: ${insertError?.message ?? "unknown"}`);
-    }
-
-    return SimulationConfigSchema.parse({
-      worldBrief: inserted.world_brief,
-      updatedAt: inserted.updated_at,
-    });
+  if (error || !data) {
+    throw new Error(`Failed to read simulation_config updated_at: ${error?.message ?? "unknown"}`);
   }
 
   return SimulationConfigSchema.parse({
-    worldBrief: data.world_brief,
+    worldBrief: context.worldBrief,
     updatedAt: toIso(data.updated_at),
   });
 }
@@ -489,6 +471,8 @@ export async function setWorldBrief(worldBrief: string): Promise<SimulationConfi
     throw new Error("World brief update requires runtime store fallback mutation path.");
   }
 
+  const context = await getOrCreateSimulationContext();
+
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -497,6 +481,7 @@ export async function setWorldBrief(worldBrief: string): Promise<SimulationConfi
       {
         id: "default",
         world_brief: worldBrief,
+        active_session_id: context.sessionId,
         updated_at: now,
       },
       { onConflict: "id" },
@@ -545,9 +530,12 @@ export async function getLatestRunSummary(): Promise<RunSummary | null> {
     return parsed.success ? parsed.data : null;
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data, error } = await supabase
     .from("cycle_run_summaries")
     .select("*")
+    .eq("session_id", sessionId)
     .order("cycle_number", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -601,9 +589,12 @@ export async function getCycleHistory(limit = 100): Promise<Array<{ cycleRun: Cy
       }));
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const { data: cycles, error: cyclesError } = await supabase
     .from("cycle_runs")
     .select("*")
+    .eq("session_id", sessionId)
     .order("cycle_number", { ascending: false })
     .limit(limit);
 
@@ -618,6 +609,7 @@ export async function getCycleHistory(limit = 100): Promise<Array<{ cycleRun: Cy
     const { data: summaries, error: summariesError } = await supabase
       .from("cycle_run_summaries")
       .select("*")
+      .eq("session_id", sessionId)
       .in("cycle_number", cycleNumbers);
 
     if (summariesError) {
@@ -688,12 +680,14 @@ export async function getCycleDetails(cycleNumber: number): Promise<{
     };
   }
 
+  const { sessionId } = await getOrCreateSimulationContext();
+
   const [cycleRunResult, worldStateResult, summaryResult, feedResult, eventsResult] = await Promise.all([
-    supabase.from("cycle_runs").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
-    supabase.from("world_state").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
-    supabase.from("cycle_run_summaries").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
-    supabase.from("feed_posts").select("*").eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
-    supabase.from("event_logs").select("*").eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
+    supabase.from("cycle_runs").select("*").eq("session_id", sessionId).eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("world_state").select("*").eq("session_id", sessionId).eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("cycle_run_summaries").select("*").eq("session_id", sessionId).eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("feed_posts").select("*").eq("session_id", sessionId).eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
+    supabase.from("event_logs").select("*").eq("session_id", sessionId).eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
   ]);
 
   if (cycleRunResult.error) {
@@ -737,6 +731,7 @@ export async function getCycleDetails(cycleNumber: number): Promise<{
     const { data: memoryRows, error: memoryError } = await supabase
       .from("agent_memories")
       .select("*")
+      .eq("session_id", sessionId)
       .in("agent_id", memoryAgentIds)
       .order("created_at", { ascending: false })
       .limit(200);

@@ -134,7 +134,11 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => {
-                if (!window.confirm("Reset simulation state? This clears cycle history, feed posts, events, and memories.")) {
+                if (
+                  !window.confirm(
+                    "Start a new simulation session? The active dashboard/feed/history will reset to baseline, while previous sessions remain stored in the database.",
+                  )
+                ) {
                   return;
                 }
 
