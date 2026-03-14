@@ -9,6 +9,10 @@ import {
   EventLogSchema,
   FeedPost,
   FeedPostSchema,
+  RunCycleInput,
+  RunSummary,
+  RunSummarySchema,
+  ScenarioMatrixInput,
   SimulationConfig,
   SimulationConfigSchema,
   WorldState,
@@ -58,6 +62,10 @@ export function fetchLatestCycle(): Promise<CycleRun> {
   return request("/api/cycles/latest", CycleRunSchema);
 }
 
+export function fetchLatestRunSummary(): Promise<RunSummary | null> {
+  return request("/api/cycles/run-summary/latest", RunSummarySchema.nullable());
+}
+
 export function fetchWorldBriefConfig(): Promise<SimulationConfig> {
   return request("/api/config/world-brief", SimulationConfigSchema);
 }
@@ -76,13 +84,61 @@ export function saveWorldBriefConfig(worldBrief: string): Promise<SimulationConf
 export function triggerCycle(): Promise<{
   cycleRun: CycleRun;
   worldState: WorldState;
+  runSummary: RunSummary;
+}> {
+  return triggerCycleWithInput({});
+}
+
+export function triggerCycleWithInput(input: RunCycleInput): Promise<{
+  cycleRun: CycleRun;
+  worldState: WorldState;
+  runSummary: RunSummary;
 }> {
   return request(
     "/api/cycle/run",
     z.object({
       cycleRun: CycleRunSchema,
       worldState: WorldStateSchema,
+      runSummary: RunSummarySchema,
     }),
-    { method: "POST" },
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function runScenarioMatrix(input: ScenarioMatrixInput): Promise<{
+  summaries: Array<{
+    scenarioLabel: string;
+    run: number;
+    cycleNumber: number;
+    delta: RunSummary["delta"];
+    postsCreated: number;
+    worldBriefUsed: string;
+  }>;
+}> {
+  return request(
+    "/api/testing/run-matrix",
+    z.object({
+      summaries: z.array(
+        z.object({
+          scenarioLabel: z.string(),
+          run: z.number().int(),
+          cycleNumber: z.number().int(),
+          delta: z.object({
+            cohesion: z.number(),
+            trust: z.number(),
+            noise: z.number(),
+          }),
+          postsCreated: z.number().int(),
+          worldBriefUsed: z.string(),
+        }),
+      ),
+    }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
   );
 }

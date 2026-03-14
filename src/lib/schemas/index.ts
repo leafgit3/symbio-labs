@@ -5,3 +5,4 @@ export * from "./feedPost";
 export * from "./eventLog";
 export * from "./cycleRun";
 export * from "./simulationConfig";
+export * from "./runConfig";

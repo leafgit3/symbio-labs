@@ -57,3 +57,28 @@ LLM_API_KEY=<your-agent-key>
 ```
 
 If either variable is missing, the simulator falls back to deterministic rule-based actions.
+
+## Scenario Testing
+
+`POST /api/cycle/run` accepts optional per-run overrides:
+
+```json
+{
+  "scenarioLabel": "high-noise stress test",
+  "worldBrief": "The citadel is facing escalating misinformation pressure.",
+  "agentOverrides": [
+    {
+      "agentId": "22222222-2222-4222-8222-222222222222",
+      "traits": ["reactive", "amplifying", "impatient"]
+    }
+  ]
+}
+```
+
+Each cycle records a structured `runSummary` (scenario label, world brief used, agent contexts, deltas, posts created) and exposes latest summary at:
+
+- `GET /api/cycles/run-summary/latest`
+
+Batch scenario matrix testing:
+
+- `POST /api/testing/run-matrix`

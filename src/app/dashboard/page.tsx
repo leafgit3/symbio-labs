@@ -7,6 +7,7 @@ import {
   fetchEvents,
   fetchFeed,
   fetchLatestCycle,
+  fetchLatestRunSummary,
   fetchWorldBriefConfig,
   fetchWorldStateCurrent,
   saveWorldBriefConfig,
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const feedQuery = useQuery({ queryKey: ["feed"], queryFn: fetchFeed });
   const eventsQuery = useQuery({ queryKey: ["events"], queryFn: fetchEvents });
   const latestCycleQuery = useQuery({ queryKey: ["latest-cycle"], queryFn: fetchLatestCycle });
+  const latestRunSummaryQuery = useQuery({ queryKey: ["latest-run-summary"], queryFn: fetchLatestRunSummary });
   const worldBriefQuery = useQuery({ queryKey: ["world-brief"], queryFn: fetchWorldBriefConfig });
 
   const worldBriefDraft = worldBriefOverride ?? worldBriefQuery.data?.worldBrief ?? "";
@@ -38,6 +40,7 @@ export default function DashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["events"] }),
         queryClient.invalidateQueries({ queryKey: ["agent-memories"] }),
         queryClient.invalidateQueries({ queryKey: ["latest-cycle"] }),
+        queryClient.invalidateQueries({ queryKey: ["latest-run-summary"] }),
       ]);
     },
   });
@@ -56,6 +59,7 @@ export default function DashboardPage() {
     feedQuery.isLoading ||
     eventsQuery.isLoading ||
     latestCycleQuery.isLoading ||
+    latestRunSummaryQuery.isLoading ||
     worldBriefQuery.isLoading;
 
   return (
@@ -161,6 +165,18 @@ export default function DashboardPage() {
           <p style={{ marginTop: "0.4rem" }}>
             <span className="code">finished:</span> {formatIso(latestCycleQuery.data?.finished_at ?? null)}
           </p>
+          <p style={{ marginTop: "0.55rem" }}>
+            <span className="code">scenario:</span> {latestRunSummaryQuery.data?.scenarioLabel ?? "-"}
+          </p>
+          <p style={{ marginTop: "0.35rem" }}>
+            <span className="code">delta:</span>{" "}
+            {latestRunSummaryQuery.data
+              ? `c${formatDelta(latestRunSummaryQuery.data.delta.cohesion)} t${formatDelta(latestRunSummaryQuery.data.delta.trust)} n${formatDelta(latestRunSummaryQuery.data.delta.noise)}`
+              : "-"}
+          </p>
+          <p style={{ marginTop: "0.35rem" }}>
+            <span className="code">posts:</span> {latestRunSummaryQuery.data?.postsCreated ?? "-"}
+          </p>
         </Panel>
       </div>
 
@@ -237,4 +253,8 @@ function formatIso(value: string | null | undefined): string {
   }
 
   return new Date(value).toLocaleString();
+}
+
+function formatDelta(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
 }
