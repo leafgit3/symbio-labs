@@ -188,9 +188,9 @@ export default function MemoriesPage() {
             rows={memoryTimelineRows}
             emptyLabel="No memory entries yet. Run a cycle."
             columns={[
-              { key: "agent_name", label: "Agent" },
-              { key: "memory_type", label: "Type" },
-              { key: "salience", label: "Salience" },
+              { key: "agent_name", label: "Agent", noWrap: true },
+              { key: "memory_type", label: "Type", noWrap: true },
+              { key: "salience", label: "Salience", noWrap: true },
               { key: "content", label: "Content" },
               { key: "created_at", label: "Created" },
             ]}
@@ -202,7 +202,7 @@ export default function MemoriesPage() {
             rows={driftRows}
             emptyLabel="No agent summaries yet."
             columns={[
-              { key: "agent_name", label: "Agent" },
+              { key: "agent_name", label: "Agent", noWrap: true },
               { key: "memory_summary", label: "Latest Memory Summary" },
             ]}
           />
@@ -213,11 +213,11 @@ export default function MemoriesPage() {
             rows={mismatchRows}
             emptyLabel="No comparison data yet."
             columns={[
-              { key: "agent_name", label: "Agent" },
+              { key: "agent_name", label: "Agent", noWrap: true },
               { key: "latest_post", label: "Latest Feed Post" },
               { key: "latest_memory", label: "Latest Memory" },
-              { key: "overlap", label: "Token Overlap" },
-              { key: "verdict", label: "Verdict" },
+              { key: "overlap", label: "Token Overlap", noWrap: true },
+              { key: "verdict", label: "Verdict", noWrap: true },
             ]}
           />
         </Panel>

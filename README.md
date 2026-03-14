@@ -63,22 +63,15 @@ supabase db query < supabase/seed.sql
 `/dashboard` supports:
 - world brief editing
 - scenario label input
-- per-run agent override JSON
 - cycle execution
 - live world/feed/event state
 - latest run summary (scenario + deltas + post count)
 
-Override JSON format:
-
-```json
-[
-  {
-    "agentId": "22222222-2222-4222-8222-222222222222",
-    "traits": ["reactive", "amplifying", "impatient"],
-    "goals": ["surface weak signals quickly"]
-  }
-]
-```
+`/agents` supports:
+- create agent
+- edit selected agent fields (name, role, goals, traits, memory summary)
+- inspect UUID + recent memory entries
+- view system-controlled status (not user-editable)
 
 ## History Viewer
 
@@ -94,6 +87,8 @@ Override JSON format:
 Core:
 - `GET /api/world-state/current`
 - `GET /api/agents`
+- `POST /api/agents`
+- `PATCH /api/agents/:agentId`
 - `GET /api/feed`
 - `GET /api/events`
 - `GET /api/agent-memories`

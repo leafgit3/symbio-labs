@@ -74,11 +74,11 @@ export default function HistoryPage() {
             rows={historyRows}
             emptyLabel="No cycles recorded yet."
             columns={[
-              { key: "cycle_number", label: "Cycle" },
-              { key: "status", label: "Status" },
+              { key: "cycle_number", label: "Cycle", noWrap: true },
+              { key: "status", label: "Status", noWrap: true },
               { key: "scenario", label: "Scenario" },
-              { key: "posts", label: "Posts" },
-              { key: "delta", label: "Delta" },
+              { key: "posts", label: "Posts", noWrap: true },
+              { key: "delta", label: "Delta", noWrap: true },
               { key: "finished_at", label: "Finished" },
             ]}
           />
@@ -127,8 +127,8 @@ export default function HistoryPage() {
                   }))}
                   emptyLabel="No summary for this cycle."
                   columns={[
-                    { key: "name", label: "Agent" },
-                    { key: "role", label: "Role" },
+                    { key: "name", label: "Agent", noWrap: true },
+                    { key: "role", label: "Role", noWrap: true },
                     { key: "goals", label: "Goals" },
                     { key: "traits", label: "Traits" },
                   ]}

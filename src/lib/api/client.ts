@@ -3,6 +3,7 @@ import {
   AgentMemory,
   AgentMemorySchema,
   AgentSchema,
+  CreateAgentInput,
   CycleRun,
   CycleRunSchema,
   EventLog,
@@ -15,6 +16,7 @@ import {
   ScenarioMatrixInput,
   SimulationConfig,
   SimulationConfigSchema,
+  UpdateAgentInput,
   WorldState,
   WorldStateSchema,
 } from "@/lib/schemas";
@@ -44,6 +46,20 @@ export function fetchWorldStateCurrent(): Promise<WorldState> {
 
 export function fetchAgents(): Promise<Agent[]> {
   return request("/api/agents", z.array(AgentSchema));
+}
+
+export function createAgent(input: CreateAgentInput): Promise<Agent> {
+  return request("/api/agents", AgentSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAgent(agentId: string, input: UpdateAgentInput): Promise<Agent> {
+  return request(`/api/agents/${agentId}`, AgentSchema, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 export function fetchAgentMemories(): Promise<AgentMemory[]> {

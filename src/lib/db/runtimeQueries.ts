@@ -2,6 +2,8 @@ import { mutateStore, readStore } from "@/lib/db/store";
 import { getSupabaseServiceClient } from "@/lib/db/supabase";
 import {
   Agent,
+  CreateAgentInput,
+  UpdateAgentInput,
   AgentSchema,
   AgentMemory,
   AgentMemorySchema,
@@ -42,6 +44,17 @@ function toIsoNullable(value: string | null): string | null {
   }
 
   return new Date(value).toISOString();
+}
+
+function parseAgentRow(row: Record<string, unknown>): Agent {
+  return AgentSchema.parse({
+    ...row,
+    goals: asArray(row.goals),
+    traits: asArray(row.traits),
+    last_action_at: toIsoNullable(row.last_action_at ? String(row.last_action_at) : null),
+    created_at: toIso(String(row.created_at)),
+    updated_at: toIso(String(row.updated_at)),
+  });
 }
 
 export function hasSupabaseRuntime(): boolean {
@@ -86,16 +99,110 @@ export async function getAgents(): Promise<Agent[]> {
     throw new Error(`Failed to read agents: ${error?.message ?? "unknown"}`);
   }
 
-  return data.map((row) =>
-    AgentSchema.parse({
-      ...row,
-      goals: asArray(row.goals),
-      traits: asArray(row.traits),
-      last_action_at: toIsoNullable(row.last_action_at),
-      created_at: toIso(row.created_at),
-      updated_at: toIso(row.updated_at),
-    }),
-  );
+  return data.map((row) => parseAgentRow(row as Record<string, unknown>));
+}
+
+export async function createAgent(input: CreateAgentInput): Promise<Agent> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return mutateStore((store) => {
+      const now = new Date().toISOString();
+      const agent = AgentSchema.parse({
+        id: crypto.randomUUID(),
+        name: input.name,
+        role: input.role,
+        goals: input.goals,
+        traits: input.traits,
+        status: "ready",
+        memory_summary: input.memory_summary,
+        last_action_at: null,
+        created_at: now,
+        updated_at: now,
+      });
+
+      store.agents.push(agent);
+      return agent;
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("agents")
+    .insert({
+      name: input.name,
+      role: input.role,
+      goals: input.goals,
+      traits: input.traits,
+      status: "ready",
+      memory_summary: input.memory_summary,
+    })
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to create agent: ${error?.message ?? "unknown"}`);
+  }
+
+  return parseAgentRow(data as Record<string, unknown>);
+}
+
+export async function updateAgent(agentId: string, input: UpdateAgentInput): Promise<Agent> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return mutateStore((store) => {
+      const index = store.agents.findIndex((agent) => agent.id === agentId);
+      if (index < 0) {
+        throw new Error("Agent not found.");
+      }
+
+      const existing = store.agents[index];
+      const updated = AgentSchema.parse({
+        ...existing,
+        ...input,
+        goals: input.goals ?? existing.goals,
+        traits: input.traits ?? existing.traits,
+        updated_at: new Date().toISOString(),
+      });
+
+      store.agents[index] = updated;
+      return updated;
+    });
+  }
+
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.name !== undefined) {
+    updates.name = input.name;
+  }
+
+  if (input.role !== undefined) {
+    updates.role = input.role;
+  }
+
+  if (input.goals !== undefined) {
+    updates.goals = input.goals;
+  }
+
+  if (input.traits !== undefined) {
+    updates.traits = input.traits;
+  }
+
+  if (input.memory_summary !== undefined) {
+    updates.memory_summary = input.memory_summary;
+  }
+
+  const { data, error } = await supabase.from("agents").update(updates).eq("id", agentId).select("*").maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to update agent: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("Agent not found.");
+  }
+
+  return parseAgentRow(data as Record<string, unknown>);
 }
 
 export async function getAgentMemories(limit = 200): Promise<AgentMemory[]> {

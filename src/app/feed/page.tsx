@@ -4,18 +4,24 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/dashboard/table";
 import { Panel } from "@/components/dashboard/panel";
-import { fetchFeed, fetchLatestCycle } from "@/lib/api/client";
-import { FeedPost } from "@/lib/schemas";
+import { fetchAgents, fetchFeed, fetchLatestCycle } from "@/lib/api/client";
+import { Agent, FeedPost } from "@/lib/schemas";
 
+const EMPTY_AGENTS: Agent[] = [];
 const EMPTY_FEED: FeedPost[] = [];
 
 export default function FeedPage() {
   const [postTypeFilter, setPostTypeFilter] = useState<FeedPost["post_type"] | "all">("all");
 
+  const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
   const feedQuery = useQuery({ queryKey: ["feed"], queryFn: fetchFeed, refetchInterval: 10_000 });
   const latestCycleQuery = useQuery({ queryKey: ["latest-cycle"], queryFn: fetchLatestCycle });
 
+  const agents = agentsQuery.data ?? EMPTY_AGENTS;
   const feed = feedQuery.data ?? EMPTY_FEED;
+  const agentsById = useMemo(() => {
+    return new Map(agents.map((agent) => [agent.id, agent.name]));
+  }, [agents]);
 
   const postTypes = useMemo(() => {
     return Array.from(new Set(feed.map((post) => post.post_type))).sort();
@@ -28,6 +34,13 @@ export default function FeedPage() {
 
     return feed.filter((post) => post.post_type === postTypeFilter);
   }, [feed, postTypeFilter]);
+
+  const filteredRows = useMemo(() => {
+    return filtered.map((post) => ({
+      ...post,
+      agent_name: agentsById.get(post.agent_id) ?? post.agent_id,
+    }));
+  }, [agentsById, filtered]);
 
   return (
     <main>
@@ -72,12 +85,12 @@ export default function FeedPage() {
           }
         >
           <DataTable
-            rows={filtered}
+            rows={filteredRows}
             emptyLabel="No feed posts yet. Run a cycle."
             columns={[
-              { key: "cycle_number", label: "Cycle" },
-              { key: "post_type", label: "Type" },
-              { key: "agent_id", label: "Agent" },
+              { key: "cycle_number", label: "Cycle", noWrap: true },
+              { key: "post_type", label: "Type", noWrap: true },
+              { key: "agent_name", label: "Agent", noWrap: true },
               { key: "content", label: "Content" },
               {
                 key: "created_at",

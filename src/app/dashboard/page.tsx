@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   fetchAgents,
   fetchEvents,
@@ -20,8 +20,6 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [worldBriefOverride, setWorldBriefOverride] = useState<string | null>(null);
   const [scenarioLabel, setScenarioLabel] = useState("");
-  const [overridesJson, setOverridesJson] = useState("[]");
-  const [runInputError, setRunInputError] = useState<string | null>(null);
 
   const worldQuery = useQuery({ queryKey: ["world"], queryFn: fetchWorldStateCurrent });
   const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
@@ -32,27 +30,22 @@ export default function DashboardPage() {
   const worldBriefQuery = useQuery({ queryKey: ["world-brief"], queryFn: fetchWorldBriefConfig });
 
   const worldBriefDraft = worldBriefOverride ?? worldBriefQuery.data?.worldBrief ?? "";
+  const agentsById = useMemo(() => {
+    return new Map((agentsQuery.data ?? []).map((agent) => [agent.id, agent.name]));
+  }, [agentsQuery.data]);
+  const feedRows = useMemo(() => {
+    return (feedQuery.data ?? []).map((post) => ({
+      ...post,
+      agent_name: agentsById.get(post.agent_id) ?? post.agent_id,
+    }));
+  }, [agentsById, feedQuery.data]);
 
   const runCycleMutation = useMutation({
     mutationFn: async () => {
-      let agentOverrides: unknown = [];
-      try {
-        agentOverrides = JSON.parse(overridesJson.trim() || "[]");
-      } catch {
-        throw new Error("Agent overrides JSON is invalid.");
-      }
-
       return triggerCycleWithInput({
         scenarioLabel: scenarioLabel.trim() || undefined,
         worldBrief: worldBriefDraft.trim() || undefined,
-        agentOverrides: Array.isArray(agentOverrides) ? agentOverrides : [],
       });
-    },
-    onMutate: () => {
-      setRunInputError(null);
-    },
-    onError: (error) => {
-      setRunInputError(error instanceof Error ? error.message : "Cycle run failed.");
     },
     onSuccess: async () => {
       await Promise.all([
@@ -124,9 +117,6 @@ export default function DashboardPage() {
               Cycle run failed. Check server logs for details.
             </p>
           ) : null}
-          {runInputError ? (
-            <p style={{ marginTop: "0.35rem", color: "#ff8a8a", fontSize: "0.82rem" }}>{runInputError}</p>
-          ) : null}
 
           <div style={{ marginTop: "0.9rem", display: "grid", gap: "0.5rem" }}>
             <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
@@ -143,27 +133,6 @@ export default function DashboardPage() {
                   color: "var(--ink)",
                   borderRadius: "0.45rem",
                   padding: "0.45rem 0.55rem",
-                }}
-              />
-            </label>
-
-            <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
-              agent overrides (JSON array)
-              <textarea
-                value={overridesJson}
-                onChange={(event) => setOverridesJson(event.target.value)}
-                rows={4}
-                style={{
-                  marginTop: "0.25rem",
-                  width: "100%",
-                  border: "1px solid var(--line)",
-                  background: "var(--bg-elev)",
-                  color: "var(--ink)",
-                  borderRadius: "0.45rem",
-                  padding: "0.5rem",
-                  fontFamily: "var(--font-space-mono), monospace",
-                  fontSize: "0.78rem",
-                  resize: "vertical",
                 }}
               />
             </label>
@@ -266,12 +235,12 @@ export default function DashboardPage() {
 
         <Panel title="Feed Posts">
           <DataTable
-            rows={feedQuery.data ?? []}
+            rows={feedRows}
             emptyLabel="No feed posts yet."
             columns={[
-              { key: "cycle_number", label: "Cycle" },
-              { key: "agent_id", label: "Agent ID" },
-              { key: "post_type", label: "Type" },
+              { key: "cycle_number", label: "Cycle", noWrap: true },
+              { key: "agent_name", label: "Agent", noWrap: true },
+              { key: "post_type", label: "Type", noWrap: true },
               { key: "content", label: "Content" },
               {
                 key: "created_at",
@@ -287,8 +256,8 @@ export default function DashboardPage() {
             rows={eventsQuery.data ?? []}
             emptyLabel="No event logs yet."
             columns={[
-              { key: "cycle_number", label: "Cycle" },
-              { key: "event_type", label: "Type" },
+              { key: "cycle_number", label: "Cycle", noWrap: true },
+              { key: "event_type", label: "Type", noWrap: true },
               { key: "summary", label: "Summary" },
               {
                 key: "created_at",
