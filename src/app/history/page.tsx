@@ -38,7 +38,7 @@ export default function HistoryPage() {
         <div>
           <h1>History</h1>
           <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)" }}>
-            Inspect completed cycles, scenario inputs, and outcome diffs.
+            Review completed cycles for this active session, compare deltas, and inspect per-cycle details.
           </p>
         </div>
       </header>

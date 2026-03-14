@@ -141,7 +141,7 @@ export default function MemoriesPage() {
         <div>
           <h1>Memory Review</h1>
           <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)" }}>
-            Alignment and drift inspection across repeated simulation rounds.
+            Track memory alignment over time and compare what agents post versus what they retain.
           </p>
         </div>
         <p className="code" style={{ color: "var(--ink-soft)", fontSize: "0.8rem" }}>
@@ -197,7 +197,7 @@ export default function MemoriesPage() {
           />
         </Panel>
 
-        <Panel title="Drift Review (Agent Memory Summaries)">
+        <Panel title="Drift Review">
           <DataTable
             rows={driftRows}
             emptyLabel="No agent summaries yet."

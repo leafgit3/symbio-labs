@@ -111,7 +111,7 @@ export default function AgentsPage() {
         <div>
           <h1>Agents</h1>
           <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)" }}>
-            Agent identities, statuses, goals, and recent memory traces.
+            Create and tune agent profiles. Roles, goals, and traits shape behavior each cycle.
           </p>
         </div>
         <p className="code" style={{ color: "var(--ink-soft)", fontSize: "0.8rem" }}>

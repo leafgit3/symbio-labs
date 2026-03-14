@@ -5,7 +5,7 @@ export default function HomePage() {
     <main>
       <h1>Symbio Labs Scaffold</h1>
       <p style={{ color: "var(--ink-soft)", marginTop: "0.6rem" }}>
-        Start with the dashboard to run and inspect simulation cycles.
+        Start on Dashboard to run cycles, then use Agents, Feed, Drift Review, and History to inspect results.
       </p>
       <div style={{ display: "flex", gap: "0.8rem", marginTop: "1.2rem", flexWrap: "wrap" }}>
         <Link href="/dashboard">Open Dashboard</Link>

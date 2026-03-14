@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   fetchAgents,
+  fetchCycleHistory,
   fetchEvents,
   fetchFeed,
   fetchLatestCycle,
@@ -17,15 +18,24 @@ import {
 import { DataTable } from "@/components/dashboard/table";
 import { Panel } from "@/components/dashboard/panel";
 
+type ScenarioPreset = {
+  id: string;
+  scenarioLabel: string;
+  worldBriefUsed: string;
+  lastCycleNumber: number;
+};
+
 export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [worldBriefOverride, setWorldBriefOverride] = useState<string | null>(null);
   const [scenarioLabel, setScenarioLabel] = useState("");
+  const [scenarioPresetId, setScenarioPresetId] = useState("");
 
   const worldQuery = useQuery({ queryKey: ["world"], queryFn: fetchWorldStateCurrent });
   const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
   const feedQuery = useQuery({ queryKey: ["feed"], queryFn: fetchFeed });
   const eventsQuery = useQuery({ queryKey: ["events"], queryFn: fetchEvents });
+  const cycleHistoryQuery = useQuery({ queryKey: ["cycle-history"], queryFn: fetchCycleHistory });
   const latestCycleQuery = useQuery({ queryKey: ["latest-cycle"], queryFn: fetchLatestCycle });
   const latestRunSummaryQuery = useQuery({ queryKey: ["latest-run-summary"], queryFn: fetchLatestRunSummary });
   const worldBriefQuery = useQuery({ queryKey: ["world-brief"], queryFn: fetchWorldBriefConfig });
@@ -40,6 +50,32 @@ export default function DashboardPage() {
       agent_name: agentsById.get(post.agent_id) ?? post.agent_id,
     }));
   }, [agentsById, feedQuery.data]);
+  const scenarioPresets = useMemo<ScenarioPreset[]>(() => {
+    const presets: ScenarioPreset[] = [];
+    const seen = new Set<string>();
+
+    for (const item of cycleHistoryQuery.data ?? []) {
+      const runSummary = item.runSummary;
+      if (!runSummary) {
+        continue;
+      }
+
+      const signature = `${runSummary.scenarioLabel}::${runSummary.worldBriefUsed}`;
+      if (seen.has(signature)) {
+        continue;
+      }
+
+      seen.add(signature);
+      presets.push({
+        id: signature,
+        scenarioLabel: runSummary.scenarioLabel,
+        worldBriefUsed: runSummary.worldBriefUsed,
+        lastCycleNumber: runSummary.cycleNumber,
+      });
+    }
+
+    return presets;
+  }, [cycleHistoryQuery.data]);
 
   const runCycleMutation = useMutation({
     mutationFn: async () => {
@@ -97,13 +133,29 @@ export default function DashboardPage() {
     worldBriefQuery.isLoading;
   const isCycleRunning = runCycleMutation.isPending;
 
+  function applyScenarioPreset(presetId: string) {
+    setScenarioPresetId(presetId);
+
+    if (!presetId) {
+      return;
+    }
+
+    const selected = scenarioPresets.find((preset) => preset.id === presetId);
+    if (!selected) {
+      return;
+    }
+
+    setScenarioLabel(selected.scenarioLabel);
+    setWorldBriefOverride(selected.worldBriefUsed);
+  }
+
   return (
     <main>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "1rem", flexWrap: "wrap" }}>
         <div>
           <h1>Lunar Citadel Dashboard</h1>
           <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)" }}>
-            Debug-first observability surface for v0 simulation loop.
+            Run simulation cycles and monitor world state, feed activity, and latest outcomes.
           </p>
         </div>
       </header>
@@ -114,6 +166,9 @@ export default function DashboardPage() {
         <Panel title="Cycle Control + World Brief" className="dashboard-control-card">
           <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>
             Run one orchestration round and refresh all views.
+          </p>
+          <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)", fontSize: "0.74rem" }}>
+            Presets are learned from completed runs in the active session.
           </p>
           <div style={{ marginTop: "0.7rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
@@ -183,10 +238,36 @@ export default function DashboardPage() {
 
           <div style={{ marginTop: "0.9rem", display: "grid", gap: "0.5rem" }}>
             <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
+              scenario preset
+              <select
+                value={scenarioPresetId}
+                onChange={(event) => applyScenarioPreset(event.target.value)}
+                style={{
+                  marginTop: "0.25rem",
+                  width: "100%",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-elev)",
+                  color: "var(--ink)",
+                  borderRadius: "0.45rem",
+                  padding: "0.45rem 0.55rem",
+                }}
+              >
+                <option value="">custom / manual</option>
+                {scenarioPresets.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.scenarioLabel} (cycle {preset.lastCycleNumber})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
               scenario label
               <input
                 value={scenarioLabel}
-                onChange={(event) => setScenarioLabel(event.target.value)}
+                onChange={(event) => {
+                  setScenarioLabel(event.target.value);
+                  setScenarioPresetId("");
+                }}
                 placeholder="default"
                 style={{
                   marginTop: "0.25rem",
@@ -206,7 +287,10 @@ export default function DashboardPage() {
           </p>
           <textarea
             value={worldBriefDraft}
-            onChange={(event) => setWorldBriefOverride(event.target.value)}
+            onChange={(event) => {
+              setWorldBriefOverride(event.target.value);
+              setScenarioPresetId("");
+            }}
             rows={6}
             style={{
               marginTop: "0.7rem",
