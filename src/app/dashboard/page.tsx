@@ -95,6 +95,7 @@ export default function DashboardPage() {
     latestCycleQuery.isLoading ||
     latestRunSummaryQuery.isLoading ||
     worldBriefQuery.isLoading;
+  const isCycleRunning = runCycleMutation.isPending;
 
   return (
     <main>
@@ -126,9 +127,20 @@ export default function DashboardPage() {
                 borderRadius: "0.5rem",
                 padding: "0.55rem 0.9rem",
                 cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.45rem",
+                opacity: runCycleMutation.isPending ? 0.92 : 1,
               }}
             >
-              {runCycleMutation.isPending ? "Running cycle..." : "Run Cycle"}
+              {runCycleMutation.isPending ? (
+                <>
+                  <InlineSpinner />
+                  Running cycle...
+                </>
+              ) : (
+                "Run Cycle"
+              )}
             </button>
 
             <button
@@ -348,7 +360,60 @@ export default function DashboardPage() {
           />
         </Panel>
       </div>
+
+      {isCycleRunning ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            right: "1rem",
+            bottom: "1rem",
+            zIndex: 50,
+            border: "1px solid var(--line)",
+            borderRadius: "0.6rem",
+            background: "color-mix(in srgb, var(--bg-elev) 92%, var(--accent) 8%)",
+            boxShadow: "0 12px 24px rgba(0, 0, 0, 0.24)",
+            padding: "0.7rem 0.8rem",
+            maxWidth: "min(92vw, 360px)",
+          }}
+        >
+          <p style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.86rem", fontWeight: 600, margin: 0 }}>
+            <InlineSpinner />
+            Orchestration running
+          </p>
+          <p style={{ marginTop: "0.35rem", marginBottom: 0, fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.35 }}>
+            Generating agent turns, feed posts, memories, and world updates.
+          </p>
+        </div>
+      ) : null}
+
+      <style jsx global>{`
+        @keyframes dashboard-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </main>
+  );
+}
+
+function InlineSpinner({ size = 14 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: "999px",
+        border: "2px solid color-mix(in srgb, var(--line) 72%, transparent 28%)",
+        borderTopColor: "var(--accent)",
+        animation: "dashboard-spin 0.8s linear infinite",
+        display: "inline-block",
+        flex: "0 0 auto",
+      }}
+    />
   );
 }
 
