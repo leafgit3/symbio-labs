@@ -1,0 +1,824 @@
+LUNAR CITADEL MVP
+Full Bootstrap Spec
+Next.js + Supabase Architecture
+Owner: Moon
+Technical collaborator: Leaf (they/them)
+Status: bootstrap request
+Goal: hosted MVP for a semi-autonomous micro-society
+
+━━━━━━━━━━━━━━━━━━━━
+1. PROJECT INTENT
+━━━━━━━━━━━━━━━━━━━━
+
+This project is not a chatbot, not a single “agent with memory,” and not a lore-heavy simulation toy.
+
+It is a very small persistent multi-agent social simulation prototype.
+
+The goal is to create a hosted MVP where a few agents:
+- persist over time
+- share a world state
+- act in scheduled cycles without manual prompting every step
+- post to an internal social feed
+- update memory
+- generate small but legible social dynamics
+- leave logs and traces that can be inspected
+
+This is the first bootable body for a larger conceptual project called “Lunar Citadel,” but this repo should only implement the smallest useful version.
+
+This first version should optimize for:
+- simplicity
+- speed of implementation
+- external persistence
+- inspectability
+- future extensibility
+
+This first version should NOT optimize for:
+- aesthetics
+- theming
+- final architecture
+- maximum abstraction
+- lore completeness
+- visually rich simulation
+- “AGI vibes”
+
+Ugly but alive is better than elegant but hypothetical.
+
+━━━━━━━━━━━━━━━━━━━━
+2. DESIGN PHILOSOPHY
+━━━━━━━━━━━━━━━━━━━━
+
+Core principle:
+Build the smallest possible persistent social simulation that proves the loop works.
+
+The MVP should feel like:
+- a tiny social terrarium
+- a living dashboard
+- a debug-friendly simulation shell
+
+Not like:
+- a polished product
+- a game
+- a complex agentic framework
+- a worldbuilding-heavy fiction interface
+
+The app should make it possible to answer:
+- Who are the agents?
+- What happened last cycle?
+- What is the current shared world state?
+- What did each agent remember?
+- What changed over time?
+- What did the agents post or react to?
+
+━━━━━━━━━━━━━━━━━━━━
+3. TECH STACK
+━━━━━━━━━━━━━━━━━━━━
+
+Preferred stack:
+- Next.js
+- Supabase
+- Supabase CLI for schema and migrations
+- TanStack Query
+- Zod
+- TypeScript
+
+Strong preference:
+- keep stack boring and reliable
+- avoid overengineering
+- avoid introducing unnecessary framework layers
+
+Open to:
+- Postgres through Supabase
+- Prisma or Drizzle if useful
+- Vercel-compatible or Railway-compatible deployment shape
+
+No theme work needed.
+No design system work needed.
+No auth complexity needed in v0 unless absolutely required.
+
+━━━━━━━━━━━━━━━━━━━━
+4. HOSTING / DEPLOYMENT ASSUMPTION
+━━━━━━━━━━━━━━━━━━━━
+
+This project should be built assuming it will be hosted, not run locally as the main mode of operation.
+
+Desired end state for v0:
+- app hosted online
+- persistent DB
+- scheduled cycle execution
+- manual cycle trigger available in UI
+- minimal admin/debug visibility
+
+Good if architecture is compatible with:
+- Vercel + Supabase
+or
+- Railway + Supabase
+or similarly simple hosted setup
+
+Repo bootstrapping matters more than final hosting decisions right now.
+
+━━━━━━━━━━━━━━━━━━━━
+5. CORE IDEA
+━━━━━━━━━━━━━━━━━━━━
+
+The application represents a tiny persistent society.
+
+Agents exist over time, interact through a shared feed, remember things, and slightly influence a shared world state.
+
+This is not a single conversational AI.
+It is a multi-agent simulation loop.
+
+Mental model:
+
+world state
+↓
+agents read state
+↓
+agents act
+↓
+feed + logs update
+↓
+memory update
+↓
+world state update
+↓
+next cycle
+
+━━━━━━━━━━━━━━━━━━━━
+6. APPLICATION LAYERS
+━━━━━━━━━━━━━━━━━━━━
+
+The system has five essential layers:
+
+1. Agents
+Persistent simulated actors with identity, goals, traits, memory, and behavior.
+
+2. World state
+A small shared state object representing the current condition of the micro-society.
+
+3. Feed
+Public social surface where agents post/react.
+
+4. Logs / events
+Structured record of what happened.
+
+5. Cycle execution
+A repeatable process that advances the simulation.
+
+━━━━━━━━━━━━━━━━━━━━
+7. MVP FUNCTIONAL SCOPE
+━━━━━━━━━━━━━━━━━━━━
+
+The MVP should include exactly these core capabilities:
+
+A. Persistent agents
+- 3 agents only
+- stable identity over time
+- role, traits, goals, memory, current status
+
+B. Shared world state
+- one shared state object
+- minimal metrics
+- simple event list
+- updated every cycle
+
+C. Internal social feed
+- agents can publish short posts
+- feed is chronological
+- posts are part of observable simulation surface
+- posts are not automatically “truth”
+
+D. Cycle runner
+- manual cycle trigger first
+- scheduled cycle support second
+- each cycle loads state, runs agents, stores outputs, updates world
+
+E. Memory per agent
+- each agent should persist some memory
+- memory should survive between cycles
+- memory should be inspectable
+- memory can be simple at first
+
+F. Event logging / observability
+- every cycle should generate logs/events
+- recent logs should be visible in admin/debug view
+
+G. Minimal admin/debug UI
+- inspect world state
+- inspect agents
+- inspect feed
+- inspect events
+- trigger cycle manually
+
+━━━━━━━━━━━━━━━━━━━━
+8. NON-GOALS FOR V0
+━━━━━━━━━━━━━━━━━━━━
+
+Please do NOT build these in the first version:
+
+- no final lore fidelity
+- no advanced social ontology
+- no rich economy
+- no factions
+- no large-scale politics
+- no large number of agents
+- no authentication system unless required
+- no real-time websockets if avoidable
+- no external platform integrations
+- no avatars
+- no voice
+- no 3D
+- no game UI
+- no thematic styling
+- no huge framework abstractions
+- no attempt to solve long-term AI memory perfectly
+
+If something is not required to prove persistent multi-agent social dynamics, leave it out.
+
+━━━━━━━━━━━━━━━━━━━━
+9. DATABASE MODEL (SUPABASE)
+━━━━━━━━━━━━━━━━━━━━
+
+Suggested core tables:
+
+1) agents
+Fields:
+- id (uuid)
+- name (text)
+- role (text)
+- goals (jsonb)
+- traits (jsonb)
+- status (text)
+- memory_summary (text)
+- last_action_at (timestamp nullable)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+Optional fields if useful:
+- prompt_profile
+- salience_bias
+- posting_style
+- activity_level
+
+2) agent_memories
+Fields:
+- id (uuid)
+- agent_id (uuid)
+- memory_type (text)
+- content (text)
+- salience (float)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+Suggested memory_type values:
+- observation
+- event_memory
+- social_memory
+- world_memory
+- self_adjustment
+- summary
+
+3) world_state
+Fields:
+- id (uuid)
+- cycle_number (integer)
+- summary (text)
+- cohesion (float)
+- trust (float)
+- noise (float)
+- active_events (jsonb)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+4) feed_posts
+Fields:
+- id (uuid)
+- cycle_number (integer)
+- agent_id (uuid)
+- post_type (text)
+- content (text)
+- created_at (timestamp)
+
+Suggested post_type values:
+- statement
+- reaction
+- signal
+- rumor
+- support
+- audit_note
+
+5) event_logs
+Fields:
+- id (uuid)
+- cycle_number (integer)
+- event_type (text)
+- source_agent_id (uuid nullable)
+- summary (text)
+- payload (jsonb)
+- created_at (timestamp)
+
+Suggested event_type values:
+- cycle_started
+- agent_action
+- feed_post_created
+- memory_updated
+- world_state_changed
+- minor_event_created
+- cycle_finished
+
+6) cycle_runs
+Fields:
+- id (uuid)
+- cycle_number (integer)
+- status (text)
+- started_at (timestamp)
+- finished_at (timestamp)
+- summary (text)
+- created_at (timestamp)
+
+Suggested status values:
+- running
+- completed
+- failed
+
+━━━━━━━━━━━━━━━━━━━━
+10. INITIAL WORLD MODEL
+━━━━━━━━━━━━━━━━━━━━
+
+Keep world state intentionally tiny.
+
+Initial global metrics:
+- cohesion
+- trust
+- noise
+
+Definitions:
+- cohesion = how stitched together the tiny society currently is
+- trust = how much social confidence exists among agents
+- noise = how much confusion / rumor / disorder is currently circulating
+
+World state should also have:
+- brief summary text
+- active events list
+- current cycle number
+
+Important:
+Feed posts do not automatically modify world state.
+World state changes should happen through explicit cycle logic.
+
+━━━━━━━━━━━━━━━━━━━━
+11. INITIAL AGENTS
+━━━━━━━━━━━━━━━━━━━━
+
+Start with exactly 3 agents.
+
+They do not need final Citadel-authentic names yet.
+
+Suggested roles:
+
+1. Coordinator / Distributor
+Behavior:
+- values order, continuity, and shared state stability
+- tends to reduce noise
+- may support cohesion
+
+2. Surface / Rumor Agent
+Behavior:
+- reacts quickly
+- posts more often
+- amplifies signals
+- may increase noise or surface hidden shifts
+
+3. Auditor / Skeptic
+Behavior:
+- questions things
+- highlights inconsistencies
+- may reduce false confidence
+- may sometimes reduce trust in the short term
+
+Each agent should have:
+- a small prompt profile
+- a behavioral bias
+- capacity to post
+- capacity to remember
+- capacity to affect the world slightly
+
+━━━━━━━━━━━━━━━━━━━━
+12. INITIAL CYCLE LOGIC
+━━━━━━━━━━━━━━━━━━━━
+
+The cycle runner should stay simple.
+
+Basic cycle flow:
+
+1. Start cycle
+- create CycleRun record
+- load latest WorldState
+- load recent FeedPosts
+- load agent records + memory
+
+2. For each agent
+- generate one action or no-op
+- optionally generate one feed post
+- optionally generate one memory update
+- store outputs
+
+3. Aggregate results
+- append EventLogs
+- compute simple world state changes
+- produce updated world summary
+
+4. Persist
+- save new/updated WorldState
+- save EventLogs
+- save FeedPosts
+- save memory updates
+- update agent statuses
+
+5. Finish cycle
+- close CycleRun
+- make results visible in admin/debug UI
+
+V0 action types:
+- post_to_feed
+- react_to_recent_post
+- update_memory
+- change_world_metric
+- create_minor_event
+- no_op
+
+Important:
+One action per agent per cycle is enough.
+
+━━━━━━━━━━━━━━━━━━━━
+13. MEMORY MODEL FOR V0
+━━━━━━━━━━━━━━━━━━━━
+
+Memory should be explicit and simple.
+
+Do not attempt perfect semantic memory in v0.
+
+V0 memory behavior:
+- agents can store short memory entries
+- memory persists between cycles
+- each cycle may add 0 or 1 memory entry per agent
+- memory can later be compacted, but compaction is not required for first boot
+
+Good enough memory questions per cycle:
+- what did this agent notice?
+- what changed socially?
+- what does this agent now “believe” or remember?
+
+Nice if possible:
+- maintain a small rolling memory summary per agent
+- cap memory growth later if needed
+
+Open to using inspiration from Hindsight-style memory layering,
+but not required to build Hindsight-like sophistication now.
+
+━━━━━━━━━━━━━━━━━━━━
+14. FEED MODEL
+━━━━━━━━━━━━━━━━━━━━
+
+The internal social feed is important because it makes the society visible.
+
+It should:
+- be chronological
+- show posts by cycle
+- show author agent
+- show post type
+- be easy to inspect
+
+The feed is the public/social surface.
+It is not the source of canonical truth.
+WorldState and EventLog remain distinct from the feed.
+
+V0 feed behavior:
+- agents may post once per cycle at most
+- content can be short
+- posts can be generated from current world state + recent feed context + agent memory
+
+━━━━━━━━━━━━━━━━━━━━
+15. EVENT / LOGGING MODEL
+━━━━━━━━━━━━━━━━━━━━
+
+Logs are mandatory from day one.
+
+The app should make it easy to inspect:
+- what happened in each cycle
+- what each agent did
+- what changed in world state
+- what memory got updated
+
+At minimum:
+- every cycle start/end should be logged
+- every agent action should be logged
+- every world state change should be logged
+- every feed post should be visible
+
+The point is not beauty.
+The point is observability.
+
+━━━━━━━━━━━━━━━━━━━━
+16. UI / SCREEN REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━
+
+Please bootstrap 4 minimal screens/views:
+
+1. Dashboard
+Show:
+- current cycle number
+- world metrics
+- current world summary
+- recent events
+- agent quick status
+
+2. Feed
+Show:
+- chronological feed posts
+- author
+- cycle number
+- post type
+- timestamp
+
+3. Agents
+Show:
+- agent list
+- role
+- goals / traits
+- current status
+- memory summary
+- recent actions
+
+4. Admin / Debug
+Show:
+- manual trigger cycle button
+- inspect latest world state
+- inspect latest cycle logs
+- inspect raw-ish structured objects if useful
+
+No theming needed.
+No fancy UX needed.
+Readable and debug-friendly is enough.
+
+━━━━━━━━━━━━━━━━━━━━
+17. API / BACKEND SHAPE
+━━━━━━━━━━━━━━━━━━━━
+
+Exact implementation is flexible, but likely useful endpoints/actions:
+
+- GET /api/world-state/current
+- GET /api/feed
+- GET /api/agents
+- GET /api/events
+- POST /api/cycle/run
+- GET /api/cycles/latest
+
+If server actions make more sense in Next.js, that’s also fine.
+
+What matters:
+- clean separation of data
+- inspectable cycle execution
+- easy manual trigger
+
+━━━━━━━━━━━━━━━━━━━━
+18. REPO SHAPE (SUGGESTED)
+━━━━━━━━━━━━━━━━━━━━
+
+Suggested initial repo structure:
+
+/app
+  /dashboard
+  /feed
+  /agents
+  /admin
+
+/lib
+  /schemas
+  /db
+  /simulation
+  /agents
+  /world
+  /events
+
+/components
+  /ui-minimal
+  /dashboard
+  /feed
+  /agents
+
+Types and logic suggestion:
+
+/lib/schemas
+  - agent.ts
+  - agentMemory.ts
+  - worldState.ts
+  - feedPost.ts
+  - eventLog.ts
+  - cycleRun.ts
+
+/lib/simulation
+  - runCycle.ts
+  - agentLoop.ts
+  - worldUpdate.ts
+  - eventBuilder.ts
+
+/lib/agents
+  - coordinator.ts
+  - surfaceAgent.ts
+  - auditor.ts
+  - prompts.ts
+
+━━━━━━━━━━━━━━━━━━━━
+19. ZOD / SCHEMA PRIORITY
+━━━━━━━━━━━━━━━━━━━━
+
+Zod should define the minimum domain objects early.
+
+Priority schemas:
+- AgentSchema
+- AgentMemorySchema
+- WorldStateSchema
+- FeedPostSchema
+- EventLogSchema
+- CycleRunSchema
+
+Please keep schemas explicit and strict enough to prevent state drift.
+
+━━━━━━━━━━━━━━━━━━━━
+20. TANSTACK QUERY PRIORITY
+━━━━━━━━━━━━━━━━━━━━
+
+TanStack Query should primarily support:
+- dashboard refresh
+- feed retrieval
+- agents list/state retrieval
+- events retrieval
+- post-cycle refresh
+
+No need for fancy real-time sync in v0.
+Polling or refresh-after-action is enough.
+
+━━━━━━━━━━━━━━━━━━━━
+21. ORCHESTRATION PRIORITY
+━━━━━━━━━━━━━━━━━━━━
+
+Important distinction:
+This app is not just frontend + CRUD.
+It needs an actual simulation loop.
+
+So backend orchestration should be treated as first-class.
+
+Priority order:
+1. define schemas
+2. persist objects
+3. implement cycle runner
+4. connect UI
+5. add scheduled execution
+
+If needed, manual cycle execution is enough before scheduled jobs are fully wired.
+
+━━━━━━━━━━━━━━━━━━━━
+22. SCHEDULING
+━━━━━━━━━━━━━━━━━━━━
+
+Desired end state:
+- cycles can be scheduled automatically
+- manual trigger exists no matter what
+
+V0 scheduling requirement:
+- just make architecture compatible with cron / scheduled jobs
+- actual timing can be simple
+- cycle frequency not important yet
+
+Good enough:
+- every few hours
+or
+- manual-first, scheduler-second
+
+━━━━━━━━━━━━━━━━━━━━
+23. LLM / AGENT LOGIC INTEGRATION
+━━━━━━━━━━━━━━━━━━━━
+
+LLM integration should be modular.
+
+The LLM should be used for:
+- agent action generation
+- feed post generation
+- short memory updates
+- maybe world summary generation
+
+The LLM should NOT be treated as:
+- hidden persistent system state
+- sole source of memory
+- sole source of truth
+
+Structured outputs are strongly preferred.
+
+If possible:
+- agent outputs should map to known action schema
+- avoid freeform blob logic as much as possible
+
+━━━━━━━━━━━━━━━━━━━━
+24. IMPORTANT PRODUCT RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Hard rules for v0:
+- persistence is mandatory
+- logs are mandatory
+- manual cycle trigger is mandatory
+- feed and world state must be separate
+- agents must persist between cycles
+- system should be inspectable
+- minimal boring implementation is preferred over speculative abstraction
+
+Please do NOT optimize for cleverness.
+Optimize for:
+- bootability
+- clarity
+- persistence
+- inspectability
+
+━━━━━━━━━━━━━━━━━━━━
+25. FUTURE-PROOFING (LIGHT ONLY)
+━━━━━━━━━━━━━━━━━━━━
+
+Please keep structure open enough for later addition of:
+- richer memory
+- more agents
+- more world metrics
+- event promotion logic
+- rumor vs institutional event distinction
+- better admin tools
+
+But do not build those now unless almost free.
+
+━━━━━━━━━━━━━━━━━━━━
+26. SUCCESS CRITERIA FOR FIRST BOOT
+━━━━━━━━━━━━━━━━━━━━
+
+The first version is successful if:
+- the repo runs
+- 3 agents exist persistently
+- a cycle can be triggered
+- agents generate actions/posts/logs
+- world state updates between cycles
+- memory persists between cycles
+- feed can be inspected
+- debug/admin view makes the simulation legible
+
+That is enough.
+
+━━━━━━━━━━━━━━━━━━━━
+27. WHAT THIS MVP IS PROVING
+━━━━━━━━━━━━━━━━━━━━
+
+This MVP is only trying to prove:
+
+Can a tiny persistent multi-agent social simulation exist as a hosted app with:
+- agents
+- memory
+- cycles
+- shared state
+- a visible social surface
+- inspectable traces
+
+If yes, the next versions can get smarter.
+If not, we revise from something real instead of theorizing forever.
+
+━━━━━━━━━━━━━━━━━━━━
+28. IMPLEMENTATION PRIORITY ORDER
+━━━━━━━━━━━━━━━━━━━━
+
+Please optimize for the smallest bootable working version.
+
+Preferred implementation order:
+1. repo scaffold
+2. Supabase schema
+3. migrations via Supabase CLI
+4. persistence layer
+5. cycle runner
+6. simple agent logic
+7. feed storage
+8. dashboard / admin visibility
+9. scheduled cycle execution
+
+Manual cycle execution is enough before scheduled jobs are fully wired.
+
+━━━━━━━━━━━━━━━━━━━━
+29. FINAL REQUEST
+━━━━━━━━━━━━━━━━━━━━
+
+Please feel free to simplify anything that feels unnecessarily heavy for first boot, as long as the core survives:
+
+- persistent agents
+- shared world state
+- internal social feed
+- cycle runner
+- memory
+- logs
+- minimal admin/debug UI
+
+Not looking for polish.
+Looking for a live skeleton.
+
+Ugly but alive is perfect for v0.
