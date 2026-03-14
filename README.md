@@ -64,6 +64,7 @@ supabase db query < supabase/seed.sql
 - world brief editing
 - scenario label input
 - cycle execution
+- simulation reset (clears cycle history, feed, events, memories; keeps agents)
 - live world/feed/event state
 - latest run summary (scenario + deltas + post count)
 
@@ -94,6 +95,7 @@ Core:
 - `GET /api/agent-memories`
 - `GET /api/cycles/latest`
 - `POST /api/cycle/run`
+- `POST /api/simulation/reset`
 
 Scenario + history:
 - `GET /api/config/world-brief`

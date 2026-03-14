@@ -84,7 +84,14 @@ export default function HistoryPage() {
           />
         </Panel>
 
-        <Panel title={selectedCycle !== null ? `Cycle ${selectedCycle} Details` : "Cycle Details"}>
+        <Panel
+          title={selectedCycle !== null ? `Cycle ${selectedCycle} Details` : "Cycle Details"}
+          rightSlot={
+            detailsQuery.data?.cycleRun?.status ? (
+              <span style={badgeStyle(statusTone(detailsQuery.data.cycleRun.status))}>{detailsQuery.data.cycleRun.status}</span>
+            ) : null
+          }
+        >
           {detailsQuery.isLoading ? <p style={{ color: "var(--ink-soft)" }}>Loading details...</p> : null}
 
           {!detailsQuery.isLoading && !detailsQuery.data ? (
@@ -94,24 +101,57 @@ export default function HistoryPage() {
           {detailsQuery.data ? (
             <div style={{ display: "grid", gap: "0.85rem" }}>
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
-                <p>
-                  <span className="code">scenario:</span> {detailsQuery.data.runSummary?.scenarioLabel ?? "-"}
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
+                  cycle summary
                 </p>
-                <p style={{ marginTop: "0.35rem", color: "var(--ink-soft)", whiteSpace: "pre-wrap" }}>
+                <p style={{ color: "var(--ink-soft)", lineHeight: 1.45 }}>{detailsQuery.data.cycleRun?.summary ?? "-"}</p>
+              </div>
+
+              <div style={{ marginTop: "0.05rem", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
+                <KeyValue label="started" value={formatIso(detailsQuery.data.cycleRun?.started_at ?? null)} />
+                <KeyValue label="finished" value={formatIso(detailsQuery.data.cycleRun?.finished_at ?? null)} />
+                <KeyValue label="scenario" value={detailsQuery.data.runSummary?.scenarioLabel ?? "-"} />
+                <KeyValue label="posts" value={String(detailsQuery.data.runSummary?.postsCreated ?? "-")} />
+              </div>
+
+              <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+                  cycle delta
+                </p>
+                {detailsQuery.data.runSummary ? (
+                  <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                    <span style={badgeStyle(deltaTone("cohesion", detailsQuery.data.runSummary.delta.cohesion))}>
+                      cohesion {formatDelta(detailsQuery.data.runSummary.delta.cohesion)}
+                    </span>
+                    <span style={badgeStyle(deltaTone("trust", detailsQuery.data.runSummary.delta.trust))}>
+                      trust {formatDelta(detailsQuery.data.runSummary.delta.trust)}
+                    </span>
+                    <span style={badgeStyle(deltaTone("noise", detailsQuery.data.runSummary.delta.noise))}>
+                      noise {formatDelta(detailsQuery.data.runSummary.delta.noise)}
+                    </span>
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--ink-soft)" }}>No run summary yet.</p>
+                )}
+              </div>
+
+              <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
+                  world brief
+                </p>
+                <p style={{ color: "var(--ink-soft)", whiteSpace: "pre-wrap", lineHeight: 1.45 }}>
                   {detailsQuery.data.runSummary?.worldBriefUsed ?? "-"}
                 </p>
               </div>
 
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
-                <p>
-                  <span className="code">world:</span> {detailsQuery.data.worldState?.summary ?? "-"}
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
+                  world state
                 </p>
-                <p style={{ marginTop: "0.35rem" }}>
-                  <span className="code">delta:</span>{" "}
-                  {detailsQuery.data.runSummary
-                    ? `c${formatDelta(detailsQuery.data.runSummary.delta.cohesion)} t${formatDelta(detailsQuery.data.runSummary.delta.trust)} n${formatDelta(detailsQuery.data.runSummary.delta.noise)}`
-                    : "-"}
-                </p>
+                <p style={{ color: "var(--ink-soft)", lineHeight: 1.45 }}>{detailsQuery.data.worldState?.summary ?? "-"}</p>
+                <div style={{ marginTop: "0.5rem", display: "flex", justifyContent: "flex-end" }}>
+                  <span style={badgeStyle("neutral")}>active events: {detailsQuery.data.worldState?.active_events.length ?? 0}</span>
+                </div>
               </div>
 
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem", minWidth: 0 }}>
@@ -136,15 +176,14 @@ export default function HistoryPage() {
               </div>
 
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
-                <p>
-                  <span className="code">feed posts:</span> {detailsQuery.data.feedPosts.length}
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+                  cycle counts
                 </p>
-                <p style={{ marginTop: "0.35rem" }}>
-                  <span className="code">events:</span> {detailsQuery.data.eventLogs.length}
-                </p>
-                <p style={{ marginTop: "0.35rem" }}>
-                  <span className="code">memories:</span> {detailsQuery.data.memories.length}
-                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.45rem" }}>
+                  <KeyValue label="feed posts" value={String(detailsQuery.data.feedPosts.length)} />
+                  <KeyValue label="events" value={String(detailsQuery.data.eventLogs.length)} />
+                  <KeyValue label="memories" value={String(detailsQuery.data.memories.length)} />
+                </div>
               </div>
             </div>
           ) : null}
@@ -164,4 +203,86 @@ function formatIso(value: string | null): string {
 
 function formatDelta(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function KeyValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ border: "1px solid var(--line)", borderRadius: "0.45rem", padding: "0.45rem 0.5rem" }}>
+      <p className="code" style={{ fontSize: "0.7rem", color: "var(--ink-soft)" }}>
+        {label}
+      </p>
+      <p style={{ marginTop: "0.2rem", fontSize: "0.86rem", overflowWrap: "anywhere" }}>{value}</p>
+    </div>
+  );
+}
+
+type Tone = "positive" | "warning" | "negative" | "neutral";
+
+function badgeStyle(tone: Tone): React.CSSProperties {
+  return {
+    border: "1px solid var(--line)",
+    borderRadius: "999px",
+    padding: "0.2rem 0.5rem",
+    fontSize: "0.75rem",
+    fontFamily: "var(--font-space-mono), monospace",
+    background: toneBackground(tone),
+    color: "var(--ink)",
+    whiteSpace: "nowrap",
+  };
+}
+
+function toneBackground(tone: Tone): string {
+  if (tone === "positive") {
+    return "color-mix(in srgb, var(--accent) 28%, var(--bg-elev) 72%)";
+  }
+
+  if (tone === "warning") {
+    return "color-mix(in srgb, #f2b84a 24%, var(--bg-elev) 76%)";
+  }
+
+  if (tone === "negative") {
+    return "color-mix(in srgb, #d06a6a 24%, var(--bg-elev) 76%)";
+  }
+
+  return "color-mix(in srgb, var(--line) 30%, var(--bg-elev) 70%)";
+}
+
+function statusTone(status: string | undefined): Tone {
+  if (status === "completed") {
+    return "positive";
+  }
+
+  if (status === "running") {
+    return "warning";
+  }
+
+  if (status === "failed") {
+    return "negative";
+  }
+
+  return "neutral";
+}
+
+function deltaTone(metric: "cohesion" | "trust" | "noise", value: number): Tone {
+  if (metric === "noise") {
+    if (value < -0.05) {
+      return "positive";
+    }
+
+    if (value > 0.05) {
+      return "negative";
+    }
+
+    return "neutral";
+  }
+
+  if (value > 0.05) {
+    return "positive";
+  }
+
+  if (value < -0.05) {
+    return "negative";
+  }
+
+  return "neutral";
 }

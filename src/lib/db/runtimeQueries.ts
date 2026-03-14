@@ -24,6 +24,9 @@ import {
 const DEFAULT_WORLD_BRIEF =
   "The citadel is a tiny digital polity testing how coordination, rumor, and skepticism shape trust over repeated cycles.";
 
+const BASELINE_WORLD_SUMMARY = "Bootstrapped world. Metrics are neutral and observable.";
+const BASELINE_CYCLE_SUMMARY = "Simulation reset baseline.";
+
 type JsonArray = string[];
 
 function asArray(value: unknown): JsonArray {
@@ -203,6 +206,129 @@ export async function updateAgent(agentId: string, input: UpdateAgentInput): Pro
   }
 
   return parseAgentRow(data as Record<string, unknown>);
+}
+
+export async function resetSimulationState(): Promise<{ cycleRun: CycleRun; worldState: WorldState }> {
+  const now = new Date().toISOString();
+  const worldState = WorldStateSchema.parse({
+    id: crypto.randomUUID(),
+    cycle_number: 0,
+    summary: BASELINE_WORLD_SUMMARY,
+    cohesion: 50,
+    trust: 50,
+    noise: 50,
+    active_events: [],
+    created_at: now,
+    updated_at: now,
+  });
+
+  const cycleRun = CycleRunSchema.parse({
+    id: crypto.randomUUID(),
+    cycle_number: 0,
+    status: "completed",
+    started_at: now,
+    finished_at: now,
+    summary: BASELINE_CYCLE_SUMMARY,
+    created_at: now,
+  });
+
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return mutateStore((store) => {
+      store.agentMemories = [];
+      store.feedPosts = [];
+      store.eventLogs = [];
+      store.worldStates = [worldState];
+      store.cycleRuns = [cycleRun];
+      store.agents = store.agents.map((agent) =>
+        AgentSchema.parse({
+          ...agent,
+          status: "ready",
+          last_action_at: null,
+          memory_summary: "",
+          updated_at: now,
+        }),
+      );
+
+      return { cycleRun, worldState };
+    });
+  }
+
+  const deleteSummaries = await supabase.from("cycle_run_summaries").delete().gte("cycle_number", 0);
+  if (deleteSummaries.error) {
+    throw new Error(`Failed clearing cycle_run_summaries: ${deleteSummaries.error.message}`);
+  }
+
+  const deleteEvents = await supabase.from("event_logs").delete().gte("cycle_number", 0);
+  if (deleteEvents.error) {
+    throw new Error(`Failed clearing event_logs: ${deleteEvents.error.message}`);
+  }
+
+  const deleteFeed = await supabase.from("feed_posts").delete().gte("cycle_number", 0);
+  if (deleteFeed.error) {
+    throw new Error(`Failed clearing feed_posts: ${deleteFeed.error.message}`);
+  }
+
+  const deleteMemories = await supabase.from("agent_memories").delete().not("id", "is", null);
+  if (deleteMemories.error) {
+    throw new Error(`Failed clearing agent_memories: ${deleteMemories.error.message}`);
+  }
+
+  const deleteCycles = await supabase.from("cycle_runs").delete().gte("cycle_number", 0);
+  if (deleteCycles.error) {
+    throw new Error(`Failed clearing cycle_runs: ${deleteCycles.error.message}`);
+  }
+
+  const deleteWorld = await supabase.from("world_state").delete().gte("cycle_number", 0);
+  if (deleteWorld.error) {
+    throw new Error(`Failed clearing world_state: ${deleteWorld.error.message}`);
+  }
+
+  const resetAgents = await supabase
+    .from("agents")
+    .update({
+      status: "ready",
+      last_action_at: null,
+      memory_summary: "",
+      updated_at: now,
+    })
+    .not("id", "is", null);
+
+  if (resetAgents.error) {
+    throw new Error(`Failed resetting agents: ${resetAgents.error.message}`);
+  }
+
+  const insertWorld = await supabase.from("world_state").insert({
+    id: worldState.id,
+    cycle_number: worldState.cycle_number,
+    summary: worldState.summary,
+    cohesion: worldState.cohesion,
+    trust: worldState.trust,
+    noise: worldState.noise,
+    active_events: worldState.active_events,
+    created_at: worldState.created_at,
+    updated_at: worldState.updated_at,
+  });
+
+  if (insertWorld.error) {
+    throw new Error(`Failed seeding world_state baseline: ${insertWorld.error.message}`);
+  }
+
+  const insertCycle = await supabase.from("cycle_runs").insert({
+    id: cycleRun.id,
+    cycle_number: cycleRun.cycle_number,
+    status: cycleRun.status,
+    started_at: cycleRun.started_at,
+    finished_at: cycleRun.finished_at,
+    summary: cycleRun.summary,
+    created_at: cycleRun.created_at,
+  });
+
+  if (insertCycle.error) {
+    throw new Error(`Failed seeding cycle_runs baseline: ${insertCycle.error.message}`);
+  }
+
+  return { cycleRun, worldState };
 }
 
 export async function getAgentMemories(limit = 200): Promise<AgentMemory[]> {

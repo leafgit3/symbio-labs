@@ -10,6 +10,7 @@ import {
   fetchLatestRunSummary,
   fetchWorldBriefConfig,
   fetchWorldStateCurrent,
+  resetSimulation,
   saveWorldBriefConfig,
   triggerCycleWithInput,
 } from "@/lib/api/client";
@@ -61,6 +62,23 @@ export default function DashboardPage() {
     },
   });
 
+  const resetSimulationMutation = useMutation({
+    mutationFn: resetSimulation,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["world"] }),
+        queryClient.invalidateQueries({ queryKey: ["agents"] }),
+        queryClient.invalidateQueries({ queryKey: ["feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        queryClient.invalidateQueries({ queryKey: ["agent-memories"] }),
+        queryClient.invalidateQueries({ queryKey: ["latest-cycle"] }),
+        queryClient.invalidateQueries({ queryKey: ["latest-run-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["cycle-history"] }),
+        queryClient.invalidateQueries({ queryKey: ["cycle-details"] }),
+      ]);
+    },
+  });
+
   const saveWorldBriefMutation = useMutation({
     mutationFn: saveWorldBriefConfig,
     onSuccess: async () => {
@@ -96,25 +114,54 @@ export default function DashboardPage() {
           <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>
             Run one orchestration round and refresh all views.
           </p>
-          <button
-            type="button"
-            onClick={() => runCycleMutation.mutate()}
-            disabled={runCycleMutation.isPending}
-            style={{
-              marginTop: "0.7rem",
-              border: "1px solid var(--line)",
-              background: "var(--accent)",
-              color: "var(--accent-ink)",
-              borderRadius: "0.5rem",
-              padding: "0.55rem 0.9rem",
-              cursor: "pointer",
-            }}
-          >
-            {runCycleMutation.isPending ? "Running cycle..." : "Run Cycle"}
-          </button>
+          <div style={{ marginTop: "0.7rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => runCycleMutation.mutate()}
+              disabled={runCycleMutation.isPending || resetSimulationMutation.isPending}
+              style={{
+                border: "1px solid var(--line)",
+                background: "var(--accent)",
+                color: "var(--accent-ink)",
+                borderRadius: "0.5rem",
+                padding: "0.55rem 0.9rem",
+                cursor: "pointer",
+              }}
+            >
+              {runCycleMutation.isPending ? "Running cycle..." : "Run Cycle"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!window.confirm("Reset simulation state? This clears cycle history, feed posts, events, and memories.")) {
+                  return;
+                }
+
+                resetSimulationMutation.mutate();
+              }}
+              disabled={runCycleMutation.isPending || resetSimulationMutation.isPending}
+              style={{
+                border: "1px solid color-mix(in srgb, #d06a6a 60%, var(--line) 40%)",
+                background: "color-mix(in srgb, #d06a6a 20%, var(--bg-elev) 80%)",
+                color: "var(--ink)",
+                borderRadius: "0.5rem",
+                padding: "0.55rem 0.9rem",
+                cursor: "pointer",
+              }}
+            >
+              {resetSimulationMutation.isPending ? "Resetting..." : "Reset Simulation"}
+            </button>
+          </div>
           {runCycleMutation.error ? (
             <p style={{ marginTop: "0.5rem", color: "#ff8a8a", fontSize: "0.82rem" }}>
               Cycle run failed. Check server logs for details.
+            </p>
+          ) : null}
+
+          {resetSimulationMutation.error ? (
+            <p style={{ marginTop: "0.5rem", color: "#ff8a8a", fontSize: "0.82rem" }}>
+              Reset failed. Check server logs for details.
             </p>
           ) : null}
 
@@ -178,41 +225,70 @@ export default function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="World State">
-          <p>
-            <span className="code">cycle:</span> {worldQuery.data?.cycle_number}
-          </p>
-          <p style={{ marginTop: "0.4rem", color: "var(--ink-soft)" }}>{worldQuery.data?.summary}</p>
-          <div style={{ marginTop: "0.65rem", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
-            <Metric label="cohesion" value={worldQuery.data?.cohesion ?? 0} />
-            <Metric label="trust" value={worldQuery.data?.trust ?? 0} />
-            <Metric label="noise" value={worldQuery.data?.noise ?? 0} />
+        <Panel
+          title="World State"
+          rightSlot={
+            <span style={badgeStyle("neutral")}>
+              cycle {worldQuery.data?.cycle_number ?? "-"}
+            </span>
+          }
+        >
+          <div style={{ border: "1px solid var(--line)", borderRadius: "0.55rem", padding: "0.6rem" }}>
+            <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
+              current summary
+            </p>
+            <p style={{ color: "var(--ink-soft)", lineHeight: 1.45 }}>{worldQuery.data?.summary ?? "-"}</p>
+          </div>
+
+          <div style={{ marginTop: "0.6rem", display: "flex", gap: "0.45rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span style={badgeStyle("neutral")}>active events: {worldQuery.data?.active_events.length ?? 0}</span>
+          </div>
+
+          <div style={{ marginTop: "0.65rem", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.5rem" }}>
+            <Metric label="cohesion" value={worldQuery.data?.cohesion ?? 0} tone={scoreTone("cohesion", worldQuery.data?.cohesion ?? 0)} />
+            <Metric label="trust" value={worldQuery.data?.trust ?? 0} tone={scoreTone("trust", worldQuery.data?.trust ?? 0)} />
+            <Metric label="noise" value={worldQuery.data?.noise ?? 0} tone={scoreTone("noise", worldQuery.data?.noise ?? 0)} />
           </div>
         </Panel>
 
-        <Panel title="Latest Cycle">
-          <p>
-            <span className="code">status:</span> {latestCycleQuery.data?.status}
-          </p>
-          <p style={{ marginTop: "0.4rem", color: "var(--ink-soft)" }}>{latestCycleQuery.data?.summary}</p>
-          <p style={{ marginTop: "0.4rem" }}>
-            <span className="code">started:</span> {formatIso(latestCycleQuery.data?.started_at ?? null)}
-          </p>
-          <p style={{ marginTop: "0.4rem" }}>
-            <span className="code">finished:</span> {formatIso(latestCycleQuery.data?.finished_at ?? null)}
-          </p>
-          <p style={{ marginTop: "0.55rem" }}>
-            <span className="code">scenario:</span> {latestRunSummaryQuery.data?.scenarioLabel ?? "-"}
-          </p>
-          <p style={{ marginTop: "0.35rem" }}>
-            <span className="code">delta:</span>{" "}
-            {latestRunSummaryQuery.data
-              ? `c${formatDelta(latestRunSummaryQuery.data.delta.cohesion)} t${formatDelta(latestRunSummaryQuery.data.delta.trust)} n${formatDelta(latestRunSummaryQuery.data.delta.noise)}`
-              : "-"}
-          </p>
-          <p style={{ marginTop: "0.35rem" }}>
-            <span className="code">posts:</span> {latestRunSummaryQuery.data?.postsCreated ?? "-"}
-          </p>
+        <Panel
+          title="Latest Cycle"
+          rightSlot={<span style={badgeStyle(statusTone(latestCycleQuery.data?.status))}>{latestCycleQuery.data?.status ?? "-"}</span>}
+        >
+          <div style={{ border: "1px solid var(--line)", borderRadius: "0.55rem", padding: "0.6rem" }}>
+            <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
+              cycle summary
+            </p>
+            <p style={{ color: "var(--ink-soft)", lineHeight: 1.45 }}>{latestCycleQuery.data?.summary ?? "-"}</p>
+          </div>
+
+          <div style={{ marginTop: "0.65rem", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
+            <KeyValue label="started" value={formatIso(latestCycleQuery.data?.started_at ?? null)} />
+            <KeyValue label="finished" value={formatIso(latestCycleQuery.data?.finished_at ?? null)} />
+            <KeyValue label="scenario" value={latestRunSummaryQuery.data?.scenarioLabel ?? "-"} />
+            <KeyValue label="posts" value={String(latestRunSummaryQuery.data?.postsCreated ?? "-")} />
+          </div>
+
+          <div style={{ marginTop: "0.65rem", border: "1px solid var(--line)", borderRadius: "0.55rem", padding: "0.6rem" }}>
+            <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+              cycle delta
+            </p>
+            {latestRunSummaryQuery.data ? (
+              <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                <span style={badgeStyle(deltaTone("cohesion", latestRunSummaryQuery.data.delta.cohesion))}>
+                  cohesion {formatDelta(latestRunSummaryQuery.data.delta.cohesion)}
+                </span>
+                <span style={badgeStyle(deltaTone("trust", latestRunSummaryQuery.data.delta.trust))}>
+                  trust {formatDelta(latestRunSummaryQuery.data.delta.trust)}
+                </span>
+                <span style={badgeStyle(deltaTone("noise", latestRunSummaryQuery.data.delta.noise))}>
+                  noise {formatDelta(latestRunSummaryQuery.data.delta.noise)}
+                </span>
+              </div>
+            ) : (
+              <p style={{ color: "var(--ink-soft)" }}>No run summary yet.</p>
+            )}
+          </div>
         </Panel>
       </div>
 
@@ -272,9 +348,20 @@ export default function DashboardPage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function KeyValue({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ border: "1px solid var(--line)", borderRadius: "0.5rem", padding: "0.55rem" }}>
+    <div style={{ border: "1px solid var(--line)", borderRadius: "0.45rem", padding: "0.45rem 0.5rem" }}>
+      <p className="code" style={{ fontSize: "0.7rem", color: "var(--ink-soft)" }}>
+        {label}
+      </p>
+      <p style={{ marginTop: "0.2rem", fontSize: "0.86rem", overflowWrap: "anywhere" }}>{value}</p>
+    </div>
+  );
+}
+
+function Metric({ label, value, tone }: { label: string; value: number; tone: Tone }) {
+  return (
+    <div style={{ border: "1px solid var(--line)", borderRadius: "0.5rem", padding: "0.55rem", background: toneBackground(tone) }}>
       <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)" }}>
         {label}
       </p>
@@ -293,4 +380,99 @@ function formatIso(value: string | null | undefined): string {
 
 function formatDelta(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+type Tone = "positive" | "warning" | "negative" | "neutral";
+
+function badgeStyle(tone: Tone): React.CSSProperties {
+  return {
+    border: "1px solid var(--line)",
+    borderRadius: "999px",
+    padding: "0.2rem 0.5rem",
+    fontSize: "0.75rem",
+    fontFamily: "var(--font-space-mono), monospace",
+    background: toneBackground(tone),
+    color: "var(--ink)",
+    whiteSpace: "nowrap",
+  };
+}
+
+function toneBackground(tone: Tone): string {
+  if (tone === "positive") {
+    return "color-mix(in srgb, var(--accent) 28%, var(--bg-elev) 72%)";
+  }
+
+  if (tone === "warning") {
+    return "color-mix(in srgb, #f2b84a 24%, var(--bg-elev) 76%)";
+  }
+
+  if (tone === "negative") {
+    return "color-mix(in srgb, #d06a6a 24%, var(--bg-elev) 76%)";
+  }
+
+  return "color-mix(in srgb, var(--line) 30%, var(--bg-elev) 70%)";
+}
+
+function statusTone(status: string | undefined): Tone {
+  if (status === "completed") {
+    return "positive";
+  }
+
+  if (status === "running") {
+    return "warning";
+  }
+
+  if (status === "failed") {
+    return "negative";
+  }
+
+  return "neutral";
+}
+
+function scoreTone(metric: "cohesion" | "trust" | "noise", value: number): Tone {
+  if (metric === "noise") {
+    if (value <= 35) {
+      return "positive";
+    }
+
+    if (value <= 60) {
+      return "warning";
+    }
+
+    return "negative";
+  }
+
+  if (value >= 65) {
+    return "positive";
+  }
+
+  if (value >= 40) {
+    return "warning";
+  }
+
+  return "negative";
+}
+
+function deltaTone(metric: "cohesion" | "trust" | "noise", value: number): Tone {
+  if (metric === "noise") {
+    if (value < -0.05) {
+      return "positive";
+    }
+
+    if (value > 0.05) {
+      return "negative";
+    }
+
+    return "neutral";
+  }
+
+  if (value > 0.05) {
+    return "positive";
+  }
+
+  if (value < -0.05) {
+    return "negative";
+  }
+
+  return "neutral";
 }

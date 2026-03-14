@@ -196,3 +196,20 @@ export function runScenarioMatrix(input: ScenarioMatrixInput): Promise<{
     },
   );
 }
+
+export function resetSimulation(): Promise<{
+  cycleRun: CycleRun;
+  worldState: WorldState;
+}> {
+  return request(
+    "/api/simulation/reset",
+    z.object({
+      cycleRun: CycleRunSchema,
+      worldState: WorldStateSchema,
+    }),
+    {
+      method: "POST",
+      body: "{}",
+    },
+  );
+}
