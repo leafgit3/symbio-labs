@@ -1,88 +1,83 @@
 # Symbio Labs
 
-Lunar Citadel MVP scaffold for persistent multi-agent simulation.
+Lunar Citadel simulation scaffold. This README is for engineering setup, infra, and contribution workflows.
 
-Core stack:
+## Stack
+
 - Next.js App Router + TypeScript
 - TanStack Query
 - Zod
-- Supabase Postgres + SQL migrations
+- Supabase Postgres (SQL migrations)
+- Optional OpenAI-compatible LLM endpoint
 
-## Quickstart
+## Prerequisites
+
+- Node.js 20+
+- npm
+- Supabase CLI (for cloud DB migrations/seeding)
+
+## Local Development
+
+1. Install deps:
 
 ```bash
 npm install
-npm run dev
 ```
 
-Open `http://localhost:3000/dashboard`.
-
-## Runtime Modes
-
-- Supabase mode (default when env is present): API reads/writes persist to Supabase cloud.
-- Fallback mode (no Supabase env): in-memory runtime for local prototyping.
-
-Required env for Supabase runtime:
+2. Configure env in `.env.local`:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 ```
 
-Optional LLM env (OpenAI-compatible endpoint):
+Optional LLM runtime:
 
 ```bash
-LLM_BASE_URL=https://<your-agent-endpoint>.agents.do-ai.run
-LLM_API_KEY=<your-agent-key>
+LLM_BASE_URL=https://<your-openai-compatible-endpoint>
+LLM_API_KEY=<api-key>
 ```
 
-If LLM env is missing, agent actions fall back to deterministic rule logic.
+3. Start app:
 
-## Supabase Setup
+```bash
+npm run dev
+```
 
-1. Link project:
+Primary app URL: `http://localhost:3000/dashboard`
+
+## Runtime Modes
+
+- Supabase mode: enabled when Supabase env vars are present; persistence uses cloud Postgres.
+- Fallback mode: if Supabase env vars are missing, runtime uses in-memory store.
+- LLM fallback: if LLM env vars are missing, agent turns use deterministic local logic.
+
+## Database Workflow (Supabase Cloud)
+
+1. Link local repo to your cloud project:
 
 ```bash
 supabase link --project-ref <your-project-ref>
 ```
 
-2. Push migrations:
+2. Apply migrations:
 
 ```bash
 supabase db push
 ```
 
-3. Seed baseline records (optional):
+3. (Optional) seed baseline records:
 
 ```bash
 supabase db query < supabase/seed.sql
 ```
 
-## Dashboard Workflow
+### Migration Notes
 
-`/dashboard` supports:
-- world brief editing
-- scenario label input
-- cycle execution
-- simulation reset (creates a new active session/blank slate while preserving prior sessions in DB)
-- live world/feed/event state
-- latest run summary (scenario + deltas + post count)
-
-`/agents` supports:
-- create agent
-- edit selected agent fields (name, role, goals, traits, memory summary)
-- inspect UUID + recent memory entries
-- view system-controlled status (not user-editable)
-
-## History Viewer
-
-`/history` provides:
-- cycle list
-- per-cycle scenario summary
-- per-cycle deltas and brief used
-- agents/roles/traits used in that cycle
-- feed/event/memory counts
-- scoped to the currently active simulation session
+- Add new SQL files under `supabase/migrations` using timestamp naming.
+- Never edit already-applied migration history in shared branches.
+- Keep schema changes forward-only and idempotent where possible.
+- Current model uses session-scoped simulation tables (`session_id`) for soft reset behavior.
 
 ## API Surfaces
 
@@ -98,7 +93,7 @@ Core:
 - `POST /api/cycle/run`
 - `POST /api/simulation/reset`
 
-Scenario + history:
+Scenario/history:
 - `GET /api/config/world-brief`
 - `POST /api/config/world-brief`
 - `GET /api/cycles/run-summary/latest`
@@ -106,11 +101,11 @@ Scenario + history:
 - `GET /api/cycles/history/:cycleNumber`
 - `POST /api/testing/run-matrix`
 
-Example matrix test:
+Matrix run example:
 
 ```bash
-curl -X POST http://localhost:3000/api/testing/run-matrix \\
-  -H "content-type: application/json" \\
+curl -X POST http://localhost:3000/api/testing/run-matrix \
+  -H "content-type: application/json" \
   -d '{
     "scenarios": [
       {"label":"baseline","worldBrief":"Baseline social equilibrium","cycles":2},
@@ -119,16 +114,43 @@ curl -X POST http://localhost:3000/api/testing/run-matrix \\
   }'
 ```
 
-## Project Structure
+## Quality Gates
 
-- `src/app/dashboard`: run control + observability
-- `src/app/history`: cycle history viewer
-- `src/app/api`: runtime APIs
-- `src/lib/simulation`: cycle orchestration
-- `src/lib/llm`: OpenAI-compatible agent turn calls
-- `src/lib/db`: Supabase/runtime query helpers
+- Lint:
+
+```bash
+npm run lint
+```
+
+- Production build check:
+
+```bash
+npm run build
+```
+
+Run both before opening a PR.
+
+## Contribution Workflow
+
+1. Fork or branch from `main`.
+2. Create a focused feature branch.
+3. Keep migrations and app code in the same PR if they are coupled.
+4. Include QA notes:
+   - what was tested manually
+   - lint/build status
+   - any Supabase migration/seed commands executed
+5. Open PR with:
+   - scope summary
+   - risk areas
+   - rollback notes if schema-affecting
+
+## Repo Layout
+
+- `src/app`: routes + API handlers
+- `src/lib/simulation`: orchestration loop
+- `src/lib/llm`: model provider adapter (OpenAI-compatible)
+- `src/lib/db`: Supabase/runtime access layer
 - `src/lib/schemas`: shared Zod contracts
 - `supabase/migrations`: schema evolution
-- `supabase/seed.sql`: baseline data
-- `docs/v0-spec.md`: concise scope
-- `docs/loop-contract.md`: cycle contract
+- `supabase/seed.sql`: optional seed data
+- `docs/citadel`: product/spec docs moved from earlier drafts
