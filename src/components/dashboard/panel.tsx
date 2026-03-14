@@ -4,11 +4,13 @@ type PanelProps = {
   title: string;
   children: ReactNode;
   rightSlot?: ReactNode;
+  className?: string;
 };
 
-export function Panel({ title, children, rightSlot }: PanelProps) {
+export function Panel({ title, children, rightSlot, className }: PanelProps) {
   return (
     <section
+      className={className}
       style={{
         background: "var(--bg-elev)",
         border: "1px solid var(--line)",

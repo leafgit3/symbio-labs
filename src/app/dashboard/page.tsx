@@ -71,15 +71,8 @@ export default function DashboardPage() {
 
       {loading ? <p style={{ marginTop: "1rem" }}>Loading state...</p> : null}
 
-      <div
-        style={{
-          display: "grid",
-          gap: "0.9rem",
-          marginTop: "1rem",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        }}
-      >
-        <Panel title="Cycle Control">
+      <div className="dashboard-top-grid">
+        <Panel title="Cycle Control + World Brief" className="dashboard-control-card">
           <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>
             Run one orchestration round and refresh all views.
           </p>
@@ -104,10 +97,8 @@ export default function DashboardPage() {
               Cycle run failed. Check server logs for details.
             </p>
           ) : null}
-        </Panel>
 
-        <Panel title="World Brief">
-          <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>
+          <p style={{ marginTop: "1rem", color: "var(--ink-soft)", fontSize: "0.9rem" }}>
             Scenario context used by agent decisions each cycle.
           </p>
           <textarea

@@ -59,6 +59,33 @@ body {
   font-size: 0.9rem;
 }
 
+.dashboard-top-grid {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 860px) {
+  .dashboard-top-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-control-card {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1220px) {
+  .dashboard-top-grid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .dashboard-control-card {
+    grid-column: auto;
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
