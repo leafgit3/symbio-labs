@@ -66,6 +66,44 @@ export function fetchLatestRunSummary(): Promise<RunSummary | null> {
   return request("/api/cycles/run-summary/latest", RunSummarySchema.nullable());
 }
 
+export function fetchCycleHistory(): Promise<
+  Array<{
+    cycleRun: CycleRun;
+    runSummary: RunSummary | null;
+  }>
+> {
+  return request(
+    "/api/cycles/history",
+    z.array(
+      z.object({
+        cycleRun: CycleRunSchema,
+        runSummary: RunSummarySchema.nullable(),
+      }),
+    ),
+  );
+}
+
+export function fetchCycleDetails(cycleNumber: number): Promise<{
+  cycleRun: CycleRun | null;
+  worldState: WorldState | null;
+  runSummary: RunSummary | null;
+  feedPosts: FeedPost[];
+  eventLogs: EventLog[];
+  memories: AgentMemory[];
+}> {
+  return request(
+    `/api/cycles/history/${cycleNumber}`,
+    z.object({
+      cycleRun: CycleRunSchema.nullable(),
+      worldState: WorldStateSchema.nullable(),
+      runSummary: RunSummarySchema.nullable(),
+      feedPosts: z.array(FeedPostSchema),
+      eventLogs: z.array(EventLogSchema),
+      memories: z.array(AgentMemorySchema),
+    }),
+  );
+}
+
 export function fetchWorldBriefConfig(): Promise<SimulationConfig> {
   return request("/api/config/world-brief", SimulationConfigSchema);
 }

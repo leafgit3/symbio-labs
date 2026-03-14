@@ -23,7 +23,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "420px" }}>
         <thead>
           <tr>
             {columns.map((column) => (
@@ -52,6 +52,8 @@ export function DataTable<T extends Record<string, unknown>>({
                     borderBottom: "1px solid var(--line)",
                     fontSize: "0.88rem",
                     verticalAlign: "top",
+                    whiteSpace: "normal",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   {column.render ? column.render(row) : String(row[column.key] ?? "")}

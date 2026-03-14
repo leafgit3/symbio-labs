@@ -11,7 +11,7 @@ import {
   fetchWorldBriefConfig,
   fetchWorldStateCurrent,
   saveWorldBriefConfig,
-  triggerCycle,
+  triggerCycleWithInput,
 } from "@/lib/api/client";
 import { DataTable } from "@/components/dashboard/table";
 import { Panel } from "@/components/dashboard/panel";
@@ -19,6 +19,9 @@ import { Panel } from "@/components/dashboard/panel";
 export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [worldBriefOverride, setWorldBriefOverride] = useState<string | null>(null);
+  const [scenarioLabel, setScenarioLabel] = useState("");
+  const [overridesJson, setOverridesJson] = useState("[]");
+  const [runInputError, setRunInputError] = useState<string | null>(null);
 
   const worldQuery = useQuery({ queryKey: ["world"], queryFn: fetchWorldStateCurrent });
   const agentsQuery = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
@@ -31,7 +34,26 @@ export default function DashboardPage() {
   const worldBriefDraft = worldBriefOverride ?? worldBriefQuery.data?.worldBrief ?? "";
 
   const runCycleMutation = useMutation({
-    mutationFn: triggerCycle,
+    mutationFn: async () => {
+      let agentOverrides: unknown = [];
+      try {
+        agentOverrides = JSON.parse(overridesJson.trim() || "[]");
+      } catch {
+        throw new Error("Agent overrides JSON is invalid.");
+      }
+
+      return triggerCycleWithInput({
+        scenarioLabel: scenarioLabel.trim() || undefined,
+        worldBrief: worldBriefDraft.trim() || undefined,
+        agentOverrides: Array.isArray(agentOverrides) ? agentOverrides : [],
+      });
+    },
+    onMutate: () => {
+      setRunInputError(null);
+    },
+    onError: (error) => {
+      setRunInputError(error instanceof Error ? error.message : "Cycle run failed.");
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["world"] }),
@@ -41,6 +63,7 @@ export default function DashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["agent-memories"] }),
         queryClient.invalidateQueries({ queryKey: ["latest-cycle"] }),
         queryClient.invalidateQueries({ queryKey: ["latest-run-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["cycle-history"] }),
       ]);
     },
   });
@@ -101,6 +124,50 @@ export default function DashboardPage() {
               Cycle run failed. Check server logs for details.
             </p>
           ) : null}
+          {runInputError ? (
+            <p style={{ marginTop: "0.35rem", color: "#ff8a8a", fontSize: "0.82rem" }}>{runInputError}</p>
+          ) : null}
+
+          <div style={{ marginTop: "0.9rem", display: "grid", gap: "0.5rem" }}>
+            <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
+              scenario label
+              <input
+                value={scenarioLabel}
+                onChange={(event) => setScenarioLabel(event.target.value)}
+                placeholder="default"
+                style={{
+                  marginTop: "0.25rem",
+                  width: "100%",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-elev)",
+                  color: "var(--ink)",
+                  borderRadius: "0.45rem",
+                  padding: "0.45rem 0.55rem",
+                }}
+              />
+            </label>
+
+            <label style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
+              agent overrides (JSON array)
+              <textarea
+                value={overridesJson}
+                onChange={(event) => setOverridesJson(event.target.value)}
+                rows={4}
+                style={{
+                  marginTop: "0.25rem",
+                  width: "100%",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-elev)",
+                  color: "var(--ink)",
+                  borderRadius: "0.45rem",
+                  padding: "0.5rem",
+                  fontFamily: "var(--font-space-mono), monospace",
+                  fontSize: "0.78rem",
+                  resize: "vertical",
+                }}
+              />
+            </label>
+          </div>
 
           <p style={{ marginTop: "1rem", color: "var(--ink-soft)", fontSize: "0.9rem" }}>
             Scenario context used by agent decisions each cycle.

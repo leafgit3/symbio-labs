@@ -16,6 +16,7 @@ export function Panel({ title, children, rightSlot, className }: PanelProps) {
         border: "1px solid var(--line)",
         borderRadius: "0.75rem",
         padding: "1rem",
+        minWidth: 0,
       }}
     >
       <div

@@ -40,6 +40,7 @@ export default function RootLayout({
                 <Link href="/agents">Agents</Link>
                 <Link href="/feed">Feed</Link>
                 <Link href="/memories">Memories</Link>
+                <Link href="/history">History</Link>
               </nav>
             </div>
           </header>

@@ -47,3 +47,11 @@ values (
   'Citadel boot complete. Beginning baseline observation.'
 )
 on conflict (id) do nothing;
+
+insert into public.simulation_config (id, world_brief, updated_at)
+values (
+  'default',
+  'The citadel is a tiny digital polity testing how coordination, rumor, and skepticism shape trust over repeated cycles.',
+  timezone('utc', now())
+)
+on conflict (id) do nothing;

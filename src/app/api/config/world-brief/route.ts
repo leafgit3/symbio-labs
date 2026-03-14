@@ -1,4 +1,4 @@
-import { mutateStore, readStore } from "@/lib/db/store";
+import { hasSupabaseRuntime, getWorldBriefConfig, setWorldBrief, setWorldBriefFallback } from "@/lib/db/runtimeQueries";
 import { SimulationConfigSchema } from "@/lib/schemas";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -10,22 +10,15 @@ const UpdateWorldBriefSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const store = readStore();
-  return NextResponse.json(SimulationConfigSchema.parse(store.simulationConfig));
+  const config = await getWorldBriefConfig();
+  return NextResponse.json(SimulationConfigSchema.parse(config));
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
   const { worldBrief } = UpdateWorldBriefSchema.parse(body);
 
-  const config = mutateStore((store) => {
-    store.simulationConfig = {
-      worldBrief,
-      updatedAt: new Date().toISOString(),
-    };
-
-    return store.simulationConfig;
-  });
+  const config = hasSupabaseRuntime() ? await setWorldBrief(worldBrief) : await setWorldBriefFallback(worldBrief);
 
   return NextResponse.json(SimulationConfigSchema.parse(config));
 }

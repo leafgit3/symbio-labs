@@ -1,0 +1,560 @@
+import { mutateStore, readStore } from "@/lib/db/store";
+import { getSupabaseServiceClient } from "@/lib/db/supabase";
+import {
+  Agent,
+  AgentSchema,
+  AgentMemory,
+  AgentMemorySchema,
+  CycleRun,
+  CycleRunSchema,
+  EventLog,
+  EventLogSchema,
+  FeedPost,
+  FeedPostSchema,
+  RunSummary,
+  RunSummarySchema,
+  SimulationConfig,
+  SimulationConfigSchema,
+  WorldState,
+  WorldStateSchema,
+} from "@/lib/schemas";
+
+const DEFAULT_WORLD_BRIEF =
+  "The citadel is a tiny digital polity testing how coordination, rumor, and skepticism shape trust over repeated cycles.";
+
+type JsonArray = string[];
+
+function asArray(value: unknown): JsonArray {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((item) => String(item));
+}
+
+function toIso(value: string): string {
+  return new Date(value).toISOString();
+}
+
+function toIsoNullable(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toISOString();
+}
+
+export function hasSupabaseRuntime(): boolean {
+  return Boolean(getSupabaseServiceClient());
+}
+
+export async function getWorldStateCurrent(): Promise<WorldState> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return store.worldStates[store.worldStates.length - 1];
+  }
+
+  const { data, error } = await supabase
+    .from("world_state")
+    .select("*")
+    .order("cycle_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error(`Failed to read world_state: ${error?.message ?? "missing row"}`);
+  }
+
+  return WorldStateSchema.parse({
+    ...data,
+    active_events: asArray(data.active_events),
+    created_at: toIso(data.created_at),
+    updated_at: toIso(data.updated_at),
+  });
+}
+
+export async function getAgents(): Promise<Agent[]> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return [...store.agents].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const { data, error } = await supabase.from("agents").select("*").order("name", { ascending: true });
+  if (error || !data) {
+    throw new Error(`Failed to read agents: ${error?.message ?? "unknown"}`);
+  }
+
+  return data.map((row) =>
+    AgentSchema.parse({
+      ...row,
+      goals: asArray(row.goals),
+      traits: asArray(row.traits),
+      last_action_at: toIsoNullable(row.last_action_at),
+      created_at: toIso(row.created_at),
+      updated_at: toIso(row.updated_at),
+    }),
+  );
+}
+
+export async function getAgentMemories(limit = 200): Promise<AgentMemory[]> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return [...store.agentMemories]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .slice(0, limit);
+  }
+
+  const { data, error } = await supabase
+    .from("agent_memories")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    throw new Error(`Failed to read agent_memories: ${error?.message ?? "unknown"}`);
+  }
+
+  return data.map((row) =>
+    AgentMemorySchema.parse({
+      ...row,
+      created_at: toIso(row.created_at),
+      updated_at: toIso(row.updated_at),
+    }),
+  );
+}
+
+export async function getFeedPosts(limit = 50): Promise<FeedPost[]> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return [...store.feedPosts]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .slice(0, limit);
+  }
+
+  const { data, error } = await supabase
+    .from("feed_posts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    throw new Error(`Failed to read feed_posts: ${error?.message ?? "unknown"}`);
+  }
+
+  return data.map((row) =>
+    FeedPostSchema.parse({
+      ...row,
+      created_at: toIso(row.created_at),
+    }),
+  );
+}
+
+export async function getEventLogs(limit = 120): Promise<EventLog[]> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return [...store.eventLogs]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .slice(0, limit);
+  }
+
+  const { data, error } = await supabase
+    .from("event_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    throw new Error(`Failed to read event_logs: ${error?.message ?? "unknown"}`);
+  }
+
+  return data.map((row) =>
+    EventLogSchema.parse({
+      ...row,
+      payload: row.payload && typeof row.payload === "object" ? row.payload : {},
+      created_at: toIso(row.created_at),
+    }),
+  );
+}
+
+export async function getLatestCycleRun(): Promise<CycleRun> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return store.cycleRuns[store.cycleRuns.length - 1];
+  }
+
+  const { data, error } = await supabase
+    .from("cycle_runs")
+    .select("*")
+    .order("cycle_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error(`Failed to read cycle_runs: ${error?.message ?? "missing row"}`);
+  }
+
+  return CycleRunSchema.parse({
+    ...data,
+    started_at: toIso(data.started_at),
+    finished_at: toIsoNullable(data.finished_at),
+    created_at: toIso(data.created_at),
+  });
+}
+
+export async function getWorldBriefConfig(): Promise<SimulationConfig> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return SimulationConfigSchema.parse(store.simulationConfig);
+  }
+
+  const { data, error } = await supabase.from("simulation_config").select("*").eq("id", "default").maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to read simulation_config: ${error.message}`);
+  }
+
+  if (!data) {
+    const now = new Date().toISOString();
+    const seed = {
+      id: "default",
+      world_brief: DEFAULT_WORLD_BRIEF,
+      updated_at: now,
+    };
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("simulation_config")
+      .insert(seed)
+      .select("*")
+      .single();
+
+    if (insertError || !inserted) {
+      throw new Error(`Failed to initialize simulation_config: ${insertError?.message ?? "unknown"}`);
+    }
+
+    return SimulationConfigSchema.parse({
+      worldBrief: inserted.world_brief,
+      updatedAt: inserted.updated_at,
+    });
+  }
+
+  return SimulationConfigSchema.parse({
+    worldBrief: data.world_brief,
+    updatedAt: toIso(data.updated_at),
+  });
+}
+
+export async function setWorldBrief(worldBrief: string): Promise<SimulationConfig> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    throw new Error("World brief update requires runtime store fallback mutation path.");
+  }
+
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("simulation_config")
+    .upsert(
+      {
+        id: "default",
+        world_brief: worldBrief,
+        updated_at: now,
+      },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to update simulation_config: ${error?.message ?? "unknown"}`);
+  }
+
+  return SimulationConfigSchema.parse({
+    worldBrief: data.world_brief,
+    updatedAt: toIso(data.updated_at),
+  });
+}
+
+export async function setWorldBriefFallback(worldBrief: string): Promise<SimulationConfig> {
+  const config = mutateStore((store) => {
+    store.simulationConfig = {
+      worldBrief,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return store.simulationConfig;
+  });
+
+  return SimulationConfigSchema.parse(config);
+}
+
+export async function getLatestRunSummary(): Promise<RunSummary | null> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+
+    const event = [...store.eventLogs]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .find((item) => item.event_type === "cycle_finished" && item.payload && typeof item.payload === "object");
+
+    const maybeSummary =
+      event && typeof event.payload === "object" && "runSummary" in event.payload
+        ? (event.payload as { runSummary?: unknown }).runSummary
+        : null;
+
+    const parsed = RunSummarySchema.safeParse(maybeSummary);
+    return parsed.success ? parsed.data : null;
+  }
+
+  const { data, error } = await supabase
+    .from("cycle_run_summaries")
+    .select("*")
+    .order("cycle_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to read cycle_run_summaries: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return RunSummarySchema.parse({
+    cycleNumber: data.cycle_number,
+    scenarioLabel: data.scenario_label,
+    worldBriefUsed: data.world_brief_used,
+    postsCreated: data.posts_created,
+    delta: data.delta,
+    agentsUsed: Array.isArray(data.agents_used) ? data.agents_used : [],
+  });
+}
+
+export async function getCycleHistory(limit = 100): Promise<Array<{ cycleRun: CycleRun; runSummary: RunSummary | null }>> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    const summariesByCycle = new Map<number, RunSummary>();
+
+    for (const event of store.eventLogs) {
+      if (event.event_type !== "cycle_finished") {
+        continue;
+      }
+
+      const maybe =
+        event.payload && typeof event.payload === "object" && "runSummary" in event.payload
+          ? (event.payload as { runSummary?: unknown }).runSummary
+          : null;
+
+      const parsed = RunSummarySchema.safeParse(maybe);
+      if (parsed.success) {
+        summariesByCycle.set(parsed.data.cycleNumber, parsed.data);
+      }
+    }
+
+    return [...store.cycleRuns]
+      .sort((a, b) => b.cycle_number - a.cycle_number)
+      .slice(0, limit)
+      .map((cycleRun) => ({
+        cycleRun,
+        runSummary: summariesByCycle.get(cycleRun.cycle_number) ?? null,
+      }));
+  }
+
+  const { data: cycles, error: cyclesError } = await supabase
+    .from("cycle_runs")
+    .select("*")
+    .order("cycle_number", { ascending: false })
+    .limit(limit);
+
+  if (cyclesError || !cycles) {
+    throw new Error(`Failed to read cycle history: ${cyclesError?.message ?? "unknown"}`);
+  }
+
+  const cycleNumbers = cycles.map((row) => row.cycle_number);
+  let summariesByCycle = new Map<number, RunSummary>();
+
+  if (cycleNumbers.length) {
+    const { data: summaries, error: summariesError } = await supabase
+      .from("cycle_run_summaries")
+      .select("*")
+      .in("cycle_number", cycleNumbers);
+
+    if (summariesError) {
+      throw new Error(`Failed to read cycle summaries: ${summariesError.message}`);
+    }
+
+    summariesByCycle = new Map(
+      (summaries ?? []).map((row) => [
+        row.cycle_number,
+        RunSummarySchema.parse({
+          cycleNumber: row.cycle_number,
+          scenarioLabel: row.scenario_label,
+          worldBriefUsed: row.world_brief_used,
+          postsCreated: row.posts_created,
+          delta: row.delta,
+          agentsUsed: Array.isArray(row.agents_used) ? row.agents_used : [],
+        }),
+      ]),
+    );
+  }
+
+  return cycles.map((row) => ({
+    cycleRun: CycleRunSchema.parse({
+      ...row,
+      started_at: toIso(row.started_at),
+      finished_at: toIsoNullable(row.finished_at),
+      created_at: toIso(row.created_at),
+    }),
+    runSummary: summariesByCycle.get(row.cycle_number) ?? null,
+  }));
+}
+
+export async function getCycleDetails(cycleNumber: number): Promise<{
+  cycleRun: CycleRun | null;
+  worldState: WorldState | null;
+  runSummary: RunSummary | null;
+  feedPosts: FeedPost[];
+  eventLogs: EventLog[];
+  memories: AgentMemory[];
+}> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+
+    const cycleRun = store.cycleRuns.find((item) => item.cycle_number === cycleNumber) ?? null;
+    const worldState = store.worldStates.find((item) => item.cycle_number === cycleNumber) ?? null;
+    const feedPosts = store.feedPosts.filter((item) => item.cycle_number === cycleNumber);
+    const eventLogs = store.eventLogs.filter((item) => item.cycle_number === cycleNumber);
+
+    const memoryAgentIds = new Set(eventLogs.map((event) => event.source_agent_id).filter(Boolean));
+    const memories = store.agentMemories.filter((memory) => memoryAgentIds.has(memory.agent_id));
+
+    const finishedEvent = eventLogs.find((item) => item.event_type === "cycle_finished");
+    const maybeRunSummary =
+      finishedEvent && finishedEvent.payload && typeof finishedEvent.payload === "object"
+        ? (finishedEvent.payload as { runSummary?: unknown }).runSummary
+        : null;
+    const parsedRunSummary = RunSummarySchema.safeParse(maybeRunSummary);
+    const runSummary = parsedRunSummary.success ? parsedRunSummary.data : null;
+
+    return {
+      cycleRun,
+      worldState,
+      runSummary,
+      feedPosts,
+      eventLogs,
+      memories,
+    };
+  }
+
+  const [cycleRunResult, worldStateResult, summaryResult, feedResult, eventsResult] = await Promise.all([
+    supabase.from("cycle_runs").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("world_state").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("cycle_run_summaries").select("*").eq("cycle_number", cycleNumber).maybeSingle(),
+    supabase.from("feed_posts").select("*").eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
+    supabase.from("event_logs").select("*").eq("cycle_number", cycleNumber).order("created_at", { ascending: true }),
+  ]);
+
+  if (cycleRunResult.error) {
+    throw new Error(`Failed reading cycle_run: ${cycleRunResult.error.message}`);
+  }
+
+  if (worldStateResult.error) {
+    throw new Error(`Failed reading world_state: ${worldStateResult.error.message}`);
+  }
+
+  if (summaryResult.error) {
+    throw new Error(`Failed reading cycle summary: ${summaryResult.error.message}`);
+  }
+
+  if (feedResult.error) {
+    throw new Error(`Failed reading feed for cycle: ${feedResult.error.message}`);
+  }
+
+  if (eventsResult.error) {
+    throw new Error(`Failed reading events for cycle: ${eventsResult.error.message}`);
+  }
+
+  const normalizedEventLogs = (eventsResult.data ?? []).map((row) =>
+    EventLogSchema.parse({
+      ...row,
+      payload: row.payload ?? {},
+      created_at: toIso(row.created_at),
+    }),
+  );
+
+  const memoryAgentIds = Array.from(
+    new Set(
+      normalizedEventLogs
+        .map((event) => event.source_agent_id)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  let memories: AgentMemory[] = [];
+  if (memoryAgentIds.length) {
+    const { data: memoryRows, error: memoryError } = await supabase
+      .from("agent_memories")
+      .select("*")
+      .in("agent_id", memoryAgentIds)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (memoryError) {
+      throw new Error(`Failed reading memories for cycle: ${memoryError.message}`);
+    }
+
+    memories = (memoryRows ?? []).map((row) =>
+      AgentMemorySchema.parse({
+        ...row,
+        created_at: toIso(row.created_at),
+        updated_at: toIso(row.updated_at),
+      }),
+    );
+  }
+
+  return {
+    cycleRun: cycleRunResult.data
+      ? CycleRunSchema.parse({
+          ...cycleRunResult.data,
+          started_at: toIso(cycleRunResult.data.started_at),
+          finished_at: toIsoNullable(cycleRunResult.data.finished_at),
+          created_at: toIso(cycleRunResult.data.created_at),
+        })
+      : null,
+    worldState: worldStateResult.data
+      ? WorldStateSchema.parse({
+          ...worldStateResult.data,
+          active_events: asArray(worldStateResult.data.active_events),
+          created_at: toIso(worldStateResult.data.created_at),
+          updated_at: toIso(worldStateResult.data.updated_at),
+        })
+      : null,
+    runSummary: summaryResult.data
+      ? RunSummarySchema.parse({
+          cycleNumber: summaryResult.data.cycle_number,
+          scenarioLabel: summaryResult.data.scenario_label,
+          worldBriefUsed: summaryResult.data.world_brief_used,
+          postsCreated: summaryResult.data.posts_created,
+          delta: summaryResult.data.delta,
+          agentsUsed: Array.isArray(summaryResult.data.agents_used) ? summaryResult.data.agents_used : [],
+        })
+      : null,
+    feedPosts: (feedResult.data ?? []).map((row) =>
+      FeedPostSchema.parse({
+        ...row,
+        created_at: toIso(row.created_at),
+      }),
+    ),
+    eventLogs: normalizedEventLogs,
+    memories,
+  };
+}

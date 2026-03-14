@@ -12,6 +12,7 @@ export default function HomePage() {
         <Link href="/agents">Agents</Link>
         <Link href="/feed">Feed</Link>
         <Link href="/memories">Memories</Link>
+        <Link href="/history">History</Link>
         <Link href="/admin">Admin</Link>
       </div>
     </main>

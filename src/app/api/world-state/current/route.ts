@@ -1,10 +1,9 @@
-import { readStore } from "@/lib/db/store";
+import { getWorldStateCurrent } from "@/lib/db/runtimeQueries";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const store = readStore();
-  const worldState = store.worldStates[store.worldStates.length - 1];
+  const worldState = await getWorldStateCurrent();
   return NextResponse.json(worldState);
 }

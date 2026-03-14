@@ -1,10 +1,9 @@
-import { readStore } from "@/lib/db/store";
+import { getLatestCycleRun } from "@/lib/db/runtimeQueries";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const store = readStore();
-  const cycleRun = store.cycleRuns[store.cycleRuns.length - 1];
+  const cycleRun = await getLatestCycleRun();
   return NextResponse.json(cycleRun);
 }
