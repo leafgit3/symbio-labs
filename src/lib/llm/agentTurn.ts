@@ -31,7 +31,9 @@ export async function requestAgentTurnFromLlm(input: AgentTurnInput): Promise<un
     "Return JSON only.",
     "Do not include explanations or reasoning text.",
     "Use this JSON shape exactly:",
-    '{"actionType":"post_to_feed|react_to_recent_post|update_memory|no_op","postType":"statement|reaction|signal|rumor|support|audit_note|null","postContent":"string|null","memoryContent":"string","delta":{"cohesion":number,"trust":number,"noise":number}}',
+    '{"actionType":"post_to_feed|react_to_recent_post|update_memory|no_op","postType":"statement|reaction|signal|rumor|support|audit_note|null","postContent":"string|null","stance":"escalate|contain|monitor","confidence":number,"memoryContent":"string","delta":{"cohesion":number,"trust":number,"noise":number}}',
+    "Always output one stance. Avoid defaulting to monitor unless evidence is genuinely insufficient.",
+    "confidence must be a number from 0 to 1.",
     "Keep delta values between -3 and 3.",
     "If actionType is no_op, postType and postContent should be null.",
   ].join("\n");

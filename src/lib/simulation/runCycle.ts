@@ -14,7 +14,9 @@ import {
   WorldState,
   WorldStateSchema,
 } from "@/lib/schemas";
-import { runAgentTurn } from "@/lib/simulation/agentLoop";
+import { AgentTurnResult, runAgentTurn } from "@/lib/simulation/agentLoop";
+import { enforceDecisionSlots } from "@/lib/simulation/decisionSlots";
+import { buildPromotedEvents } from "@/lib/simulation/eventPromotion";
 import { buildWorldStateUpdate } from "@/lib/world/worldUpdate";
 
 export type RunCycleResult = {
@@ -49,6 +51,11 @@ function toIso(value: string | null): string | null {
 
   return new Date(value).toISOString();
 }
+
+type ExecutedTurn = {
+  agent: Agent;
+  turn: AgentTurnResult;
+};
 
 export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResult> {
   const supabase = getSupabaseServiceClient();
@@ -158,6 +165,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
   let delta = { cohesion: 0, trust: 0, noise: 0 };
   let postsCreated = 0;
+  const executedTurns: ExecutedTurn[] = [];
 
   for (const effectiveAgent of agentsUsed) {
     const recentFeedResult = await supabase
@@ -189,6 +197,10 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       recentFeed: (recentFeedResult.data ?? []).map((row) => row.content),
       recentMemories: (recentMemoriesResult.data ?? []).map((row) => row.content),
     });
+    executedTurns.push({
+      agent: effectiveAgent,
+      turn,
+    });
 
     const actionTimestamp = new Date().toISOString();
 
@@ -207,6 +219,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       summary: `${effectiveAgent.name} executed ${turn.actionType}.`,
       payload: {
         ...turn,
+        stanceSource: "organic",
         role: effectiveAgent.role,
         goals: effectiveAgent.goals,
         traits: effectiveAgent.traits,
@@ -282,11 +295,39 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       .eq("id", effectiveAgent.id);
   }
 
+  const decisionSlots = enforceDecisionSlots(executedTurns);
+
+  if (decisionSlots.forcedSlots.length > 0) {
+    await supabase.from("event_logs").insert({
+      id: crypto.randomUUID(),
+      session_id: sessionId,
+      cycle_number: cycleNumber,
+      event_type: "minor_event_created",
+      source_agent_id: null,
+      summary: `Decision-slot fallback filled ${decisionSlots.forcedSlots.length} missing stance slot(s).`,
+      payload: {
+        forcedSlotsCount: decisionSlots.forcedSlots.length,
+        forcedSlots: decisionSlots.forcedSlots,
+        organicStanceCounts: decisionSlots.organicCounts,
+        effectiveStanceCounts: decisionSlots.effectiveCounts,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  const promotedEvents = buildPromotedEvents({
+    delta,
+    stanceCounts: decisionSlots.effectiveCounts,
+    forcedSlotsCount: decisionSlots.forcedSlots.length,
+    totalAgents: agentsUsed.length,
+  });
+
   const worldState = buildWorldStateUpdate({
     cycleNumber,
     prev: previousWorld,
     delta,
     summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
+    activeEvents: promotedEvents,
   });
 
   await supabase.from("world_state").insert({
@@ -313,6 +354,10 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       cohesion: worldState.cohesion,
       trust: worldState.trust,
       noise: worldState.noise,
+      promotedEvents: worldState.active_events,
+      organicStanceCounts: decisionSlots.organicCounts,
+      effectiveStanceCounts: decisionSlots.effectiveCounts,
+      forcedSlotsCount: decisionSlots.forcedSlots.length,
       worldBriefUsed,
       scenarioLabel,
     },
@@ -329,12 +374,16 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       trust: round1(delta.trust),
       noise: round1(delta.noise),
     },
-    agentsUsed: agentsUsed.map((agent) => ({
-      id: agent.id,
-      name: agent.name,
-      role: agent.role,
-      goals: agent.goals,
-      traits: agent.traits,
+    agentsUsed: decisionSlots.records.map((record) => ({
+      id: record.agent.id,
+      name: record.agent.name,
+      role: record.agent.role,
+      goals: record.agent.goals,
+      traits: record.agent.traits,
+      stance: record.effectiveStance,
+      stanceSource: record.stanceSource,
+      confidence: record.turn.confidence,
+      fallbackReason: record.fallbackReason,
     })),
   });
 
@@ -433,6 +482,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
     );
 
     let delta = { cohesion: 0, trust: 0, noise: 0 };
+    const executedTurns: ExecutedTurn[] = [];
 
     for (const effectiveAgent of agentsUsed) {
       const persistedAgent = store.agents.find((agent) => agent.id === effectiveAgent.id);
@@ -457,6 +507,10 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         recentFeed,
         recentMemories,
       });
+      executedTurns.push({
+        agent: effectiveAgent,
+        turn,
+      });
       const actionTimestamp = new Date().toISOString();
 
       delta = {
@@ -473,6 +527,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           summary: `${effectiveAgent.name} executed ${turn.actionType}.`,
           payload: {
             ...turn,
+            stanceSource: "organic",
             role: effectiveAgent.role,
             goals: effectiveAgent.goals,
             traits: effectiveAgent.traits,
@@ -532,11 +587,37 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       persistedAgent.updated_at = actionTimestamp;
     }
 
+    const decisionSlots = enforceDecisionSlots(executedTurns);
+
+    if (decisionSlots.forcedSlots.length > 0) {
+      store.eventLogs.push(
+        buildEvent({
+          cycleNumber,
+          eventType: "minor_event_created",
+          summary: `Decision-slot fallback filled ${decisionSlots.forcedSlots.length} missing stance slot(s).`,
+          payload: {
+            forcedSlotsCount: decisionSlots.forcedSlots.length,
+            forcedSlots: decisionSlots.forcedSlots,
+            organicStanceCounts: decisionSlots.organicCounts,
+            effectiveStanceCounts: decisionSlots.effectiveCounts,
+          },
+        }),
+      );
+    }
+
+    const promotedEvents = buildPromotedEvents({
+      delta,
+      stanceCounts: decisionSlots.effectiveCounts,
+      forcedSlotsCount: decisionSlots.forcedSlots.length,
+      totalAgents: agentsUsed.length,
+    });
+
     const worldState = buildWorldStateUpdate({
       cycleNumber,
       prev: previousWorld,
       delta,
       summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
+      activeEvents: promotedEvents,
     });
 
     store.worldStates.push(worldState);
@@ -550,6 +631,10 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           cohesion: worldState.cohesion,
           trust: worldState.trust,
           noise: worldState.noise,
+          promotedEvents: worldState.active_events,
+          organicStanceCounts: decisionSlots.organicCounts,
+          effectiveStanceCounts: decisionSlots.effectiveCounts,
+          forcedSlotsCount: decisionSlots.forcedSlots.length,
           worldBriefUsed,
           scenarioLabel,
         },
@@ -568,12 +653,16 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         trust: round1(delta.trust),
         noise: round1(delta.noise),
       },
-      agentsUsed: agentsUsed.map((agent) => ({
-        id: agent.id,
-        name: agent.name,
-        role: agent.role,
-        goals: agent.goals,
-        traits: agent.traits,
+      agentsUsed: decisionSlots.records.map((record) => ({
+        id: record.agent.id,
+        name: record.agent.name,
+        role: record.agent.role,
+        goals: record.agent.goals,
+        traits: record.agent.traits,
+        stance: record.effectiveStance,
+        stanceSource: record.stanceSource,
+        confidence: record.turn.confidence,
+        fallbackReason: record.fallbackReason,
       })),
     });
 

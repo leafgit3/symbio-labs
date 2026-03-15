@@ -9,6 +9,7 @@ export function buildWorldStateUpdate(args: {
   prev: WorldState;
   delta: { cohesion: number; trust: number; noise: number };
   summary: string;
+  activeEvents?: string[];
 }): WorldState {
   const now = new Date().toISOString();
   return WorldStateSchema.parse({
@@ -18,7 +19,7 @@ export function buildWorldStateUpdate(args: {
     cohesion: clampMetric(args.prev.cohesion + args.delta.cohesion),
     trust: clampMetric(args.prev.trust + args.delta.trust),
     noise: clampMetric(args.prev.noise + args.delta.noise),
-    active_events: [],
+    active_events: args.activeEvents ?? [],
     created_at: now,
     updated_at: now,
   });

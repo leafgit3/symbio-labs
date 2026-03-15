@@ -1,0 +1,81 @@
+Structural Update Report (Tracks A + B)
+Date: 2026-03-15
+
+Purpose
+- This update reports what was implemented after review of:
+  - 01 - First structural feedback
+  - 02 - Structural response and implementation plan
+
+Summary
+- We implemented Track A (decision-slot enforcement with provenance transparency).
+- We implemented Track B (event promotion outside agent prose).
+- We did not yet implement Track C (salience stratification) or Track D full UI diagnostics.
+
+Implemented changes
+
+1) Agent turn contract now includes explicit stance
+- Added stance output to each turn:
+  - escalate | contain | monitor
+- Added optional confidence (0..1)
+- Files:
+  - src/lib/simulation/agentLoop.ts
+  - src/lib/llm/agentTurn.ts
+  - src/lib/schemas/runConfig.ts
+
+2) Decision-slot enforcement with provenance (requested caution applied)
+- Cycle runner now enforces minimum stance coverage each cycle:
+  - at least one escalate
+  - at least one contain
+  - at least one monitor
+- If missing slots occur, orchestrator applies deterministic fallback assignment.
+- Critically, fallback is not hidden:
+  - stanceSource = organic | orchestrator_fallback
+  - fallbackReason included per affected agent
+  - forced slot fills logged as minor_event_created event
+- Files:
+  - src/lib/simulation/decisionSlots.ts (new)
+  - src/lib/simulation/runCycle.ts
+  - src/lib/schemas/runConfig.ts
+
+3) Event promotion moved into orchestration layer
+- Added threshold-based event promotion that does not depend on prose consensus alone.
+- Promotion inputs include:
+  - stance imbalance
+  - noise-trust divergence
+  - monitor-majority under rising noise
+  - forced slot activity
+- Promoted events are now persisted into world_state.active_events.
+- Files:
+  - src/lib/simulation/eventPromotion.ts (new)
+  - src/lib/simulation/runCycle.ts
+  - src/lib/world/worldUpdate.ts
+
+4) History visibility for stance provenance
+- Cycle details "agents used" table now displays:
+  - stance
+  - source (organic vs fallback)
+  - fallback reason
+- File:
+  - src/app/history/page.tsx
+
+Diagnostics emitted during run
+- world_state_changed payload now includes:
+  - organicStanceCounts
+  - effectiveStanceCounts
+  - forcedSlotsCount
+  - promotedEvents
+- minor_event_created emitted when fallback slot fills are applied.
+
+Validation status
+- npm run lint: passed
+- npm run build: passed
+
+Not yet implemented (next)
+- Track C: salience stratification (replace fixed 0.65)
+- Track D (full): richer dashboard/history diagnostics cards and contradiction score surface
+
+Notes
+- No schema migration was required for A+B because:
+  - stances/provenance are stored inside existing agents_used JSON in cycle summaries
+  - promoted events use existing world_state.active_events
+  - fallback diagnostics are emitted as existing event_logs payload

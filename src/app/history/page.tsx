@@ -161,16 +161,22 @@ export default function HistoryPage() {
                 <DataTable
                   rows={(detailsQuery.data.runSummary?.agentsUsed ?? []).map((agent) => ({
                     name: agent.name,
+                    stance: agent.stance ?? "-",
+                    source: agent.stanceSource ?? "-",
                     role: agent.role,
                     goals: agent.goals.join(", "),
                     traits: agent.traits.join(", "),
+                    fallback_reason: agent.fallbackReason ?? "-",
                   }))}
                   emptyLabel="No summary for this cycle."
                   columns={[
                     { key: "name", label: "Agent", noWrap: true },
+                    { key: "stance", label: "Stance", noWrap: true },
+                    { key: "source", label: "Source", noWrap: true },
                     { key: "role", label: "Role", noWrap: true },
                     { key: "goals", label: "Goals" },
                     { key: "traits", label: "Traits" },
+                    { key: "fallback_reason", label: "Fallback Reason" },
                   ]}
                 />
               </div>

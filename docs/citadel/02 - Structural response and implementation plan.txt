@@ -1,0 +1,115 @@
+Structural Response and Implementation Plan
+Date: 2026-03-14
+
+Context
+- This document responds to:
+  docs/citadel/01 - First structural feedback.txt
+- Goal: confirm whether feedback is valid in persisted runtime data, then define the next structural implementation steps.
+
+Quick Validation (DB Audit)
+- Active session in DB:
+  - id: 00000000-0000-4000-8000-000000000001
+  - label: legacy
+- Agent count: 10 (matches claim that ecology was expanded)
+- Latest completed cycle in that session: cycle 5
+- Cycle 5 summary:
+  - scenario_label: aesthetic_truth_escalation_test
+  - delta: cohesion +2.8, trust -2.4, noise +4.0
+  - posts_created: 9
+- World state at cycle 5:
+  - active_events: [] (0 active events)
+- Event counts at cycle 5:
+  - cycle_started: 1
+  - agent_action: 10
+  - feed_post_created: 9
+  - memory_updated: 10
+  - world_state_changed: 1
+  - cycle_finished: 1
+- Drift metrics reproduced from stored data using current app logic:
+  - alignment score: 0.0377 (~4%)
+  - alignment label: drifting
+  - average salience: 0.65
+
+Conclusion from audit
+- The report is legitimate and consistent with persisted data.
+- The bottleneck is structural, not just prompt copy.
+
+Observed structural constraints in current runtime
+- No event promotion pipeline:
+  - active events are currently always set to [] in world update code.
+  - file: src/lib/world/worldUpdate.ts
+- Memory salience is flat:
+  - salience is hardcoded as 0.65 for new memory entries.
+  - file: src/lib/simulation/runCycle.ts
+- Orchestration does not enforce stance diversity:
+  - no required decision slots for escalation/containment/monitor.
+  - file: src/lib/simulation/runCycle.ts
+- Role differentiation is mostly descriptive:
+  - fallback logic creates stylistic variation but weak mechanical divergence.
+  - file: src/lib/simulation/agentLoop.ts
+
+Implementation plan (next iteration)
+
+Track A: Decision-slot enforcement
+1) Extend agent turn contract with stance output:
+   - stance: escalate | contain | monitor
+   - optional confidence: 0-1
+2) Require cycle runner to satisfy slot minimums:
+   - at least one escalate candidate
+   - at least one contain candidate
+   - at least one monitor candidate
+3) If slots are missing, use deterministic tie-break fill rules by role class.
+4) Add stance provenance diagnostics so synthetic coverage is visible:
+   - stance_source: organic | orchestrator_fallback
+   - fallback_reason (when used)
+   - forced_slots_count per cycle
+
+Track B: Event promotion outside prose
+1) Add an orchestration-level promotion function.
+2) Promote active events by thresholds, not wording style:
+   - stance imbalance
+   - contradiction density
+   - noise/trust thresholds
+   - repeated unresolved signals over N cycles
+3) Persist promoted event descriptors to world_state.active_events.
+
+Track C: Salience stratification
+1) Replace fixed 0.65 with computed salience score.
+2) Inputs for salience score:
+   - contradiction against recent feed
+   - novelty vs recent memory
+   - threshold relevance (event-linked cues)
+   - public/private mismatch
+3) Clamp to bounded range (for example 0.2-0.95) and store in agent_memories.salience.
+
+Track D: Anti-convergence pressure and observability
+1) Add anti-convergence pressure in synthesis when all stances collapse too early.
+2) Add cycle-level diagnostics to summaries/history:
+   - stance distribution
+   - stance provenance distribution (organic vs fallback)
+   - promoted_events_count
+   - contradiction_score
+3) Surface diagnostics in History details and Dashboard latest summary card.
+
+Suggested PR slices
+- PR1: Stance contract + decision-slot enforcement
+- PR2: Event promotion engine + active_events persistence
+- PR3: Salience scoring and contradiction metrics
+- PR4: UI/History diagnostics + validation harness updates
+
+Acceptance criteria for this iteration
+- In disagreement-forcing scenarios, each cycle records non-zero stance diversity.
+- Stance diagnostics clearly separate organic diversity from orchestrator-filled fallback diversity.
+- active_events can become non-empty when thresholds are met.
+- salience distribution is not flat (variance above zero across a cycle batch).
+- History shows stance/event diagnostics for at least the latest 10 cycles.
+
+Validation protocol (repeatable)
+1) Run controlled scenario for 5 cycles with disagreement objective.
+2) Confirm slot coverage each cycle (escalate/contain/monitor all present).
+3) Confirm event promotion occurs when thresholds trigger.
+4) Compare against baseline run (pre-change) using cycle deltas and diagnostics.
+
+Non-goals in this phase
+- Session restore UI is deferred.
+- Agent copy-only retuning without structural runtime changes is out of scope.

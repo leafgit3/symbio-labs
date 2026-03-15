@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const DecisionStanceSchema = z.enum(["escalate", "contain", "monitor"]);
+export const StanceSourceSchema = z.enum(["organic", "orchestrator_fallback"]);
+
 export const AgentOverrideSchema = z.object({
   agentId: z.string().uuid(),
   role: z.string().min(2).max(120).optional(),
@@ -30,6 +33,10 @@ export const RunSummarySchema = z.object({
       role: z.string(),
       goals: z.array(z.string()),
       traits: z.array(z.string()),
+      stance: DecisionStanceSchema.optional(),
+      stanceSource: StanceSourceSchema.optional(),
+      confidence: z.number().min(0).max(1).optional(),
+      fallbackReason: z.string().min(1).max(300).optional(),
     }),
   ),
 });
@@ -48,3 +55,5 @@ export const ScenarioMatrixInputSchema = z.object({
 export type RunCycleInput = z.infer<typeof RunCycleInputSchema>;
 export type RunSummary = z.infer<typeof RunSummarySchema>;
 export type ScenarioMatrixInput = z.infer<typeof ScenarioMatrixInputSchema>;
+export type DecisionStance = z.infer<typeof DecisionStanceSchema>;
+export type StanceSource = z.infer<typeof StanceSourceSchema>;
