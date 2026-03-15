@@ -15,7 +15,7 @@ import {
   WorldStateSchema,
 } from "@/lib/schemas";
 import { AgentTurnResult, runAgentTurn } from "@/lib/simulation/agentLoop";
-import { enforceDecisionSlots } from "@/lib/simulation/decisionSlots";
+import { enforceDecisionSlots, StanceCounts } from "@/lib/simulation/decisionSlots";
 import { buildPromotedEvents } from "@/lib/simulation/eventPromotion";
 import { computeMemorySalience } from "@/lib/simulation/salience";
 import { buildWorldStateUpdate } from "@/lib/world/worldUpdate";
@@ -45,6 +45,10 @@ function round1(value: number): number {
   return Number(value.toFixed(1));
 }
 
+function round2(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 function toIso(value: string | null): string | null {
   if (!value) {
     return null;
@@ -57,6 +61,83 @@ type ExecutedTurn = {
   agent: Agent;
   turn: AgentTurnResult;
 };
+
+function tokenOverlap(a: string, b: string): number {
+  const normalize = (input: string) =>
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3);
+
+  const aTokens = new Set(normalize(a));
+  const bTokens = new Set(normalize(b));
+
+  if (!aTokens.size || !bTokens.size) {
+    return 0;
+  }
+
+  let intersection = 0;
+  for (const token of aTokens) {
+    if (bTokens.has(token)) {
+      intersection += 1;
+    }
+  }
+
+  const union = aTokens.size + bTokens.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function normalizedStanceEntropy(counts: StanceCounts): number {
+  const total = counts.escalate + counts.contain + counts.monitor;
+  if (total <= 0) {
+    return 0;
+  }
+
+  const parts = [counts.escalate, counts.contain, counts.monitor]
+    .map((value) => value / total)
+    .filter((value) => value > 0);
+
+  const entropy = -parts.reduce((sum, p) => sum + p * Math.log(p), 0);
+  const maxEntropy = Math.log(3);
+  return maxEntropy <= 0 ? 0 : entropy / maxEntropy;
+}
+
+function buildContradictionScore(args: {
+  turns: ExecutedTurn[];
+  effectiveStanceCounts: StanceCounts;
+  forcedSlotsCount: number;
+}): number {
+  const mismatches = args.turns
+    .filter((item) => Boolean(item.turn.postContent))
+    .map((item) => 1 - tokenOverlap(item.turn.memoryContent, item.turn.postContent ?? ""));
+
+  const mismatchAvg =
+    mismatches.length > 0 ? mismatches.reduce((sum, value) => sum + value, 0) / mismatches.length : 0.35;
+  const entropy = normalizedStanceEntropy(args.effectiveStanceCounts);
+  const forcedFactor = Math.min(args.forcedSlotsCount / 2, 1);
+
+  const raw = mismatchAvg * 0.55 + entropy * 0.35 + forcedFactor * 0.1;
+  return round2(Math.min(1, Math.max(0, raw)));
+}
+
+function avg(values: number[]): number {
+  if (!values.length) {
+    return 0;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function stdDev(values: number[], mean: number): number {
+  if (!values.length) {
+    return 0;
+  }
+
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
 
 export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResult> {
   const supabase = getSupabaseServiceClient();
@@ -167,6 +248,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   let delta = { cohesion: 0, trust: 0, noise: 0 };
   let postsCreated = 0;
   const executedTurns: ExecutedTurn[] = [];
+  const memorySaliences: number[] = [];
 
   for (const effectiveAgent of agentsUsed) {
     const recentFeedResult = await supabase
@@ -256,18 +338,21 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       });
     }
 
+    const salience = computeMemorySalience({
+      turn,
+      memoryContent: turn.memoryContent,
+      postContent: turn.postContent,
+      recentFeed,
+      recentMemories,
+    });
+    memorySaliences.push(salience);
+
     const memoryEntry = AgentMemorySchema.parse({
       id: crypto.randomUUID(),
       agent_id: effectiveAgent.id,
       memory_type: "observation",
       content: turn.memoryContent,
-      salience: computeMemorySalience({
-        turn,
-        memoryContent: turn.memoryContent,
-        postContent: turn.postContent,
-        recentFeed,
-        recentMemories,
-      }),
+      salience,
       created_at: actionTimestamp,
       updated_at: actionTimestamp,
     });
@@ -331,6 +416,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     forcedSlotsCount: decisionSlots.forcedSlots.length,
     totalAgents: agentsUsed.length,
   });
+  const contradictionScore = buildContradictionScore({
+    turns: executedTurns,
+    effectiveStanceCounts: decisionSlots.effectiveCounts,
+    forcedSlotsCount: decisionSlots.forcedSlots.length,
+  });
+  const salienceAvg = round2(avg(memorySaliences));
+  const salienceStdDev = round2(stdDev(memorySaliences, salienceAvg));
 
   const worldState = buildWorldStateUpdate({
     cycleNumber,
@@ -368,6 +460,9 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       organicStanceCounts: decisionSlots.organicCounts,
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
+      contradictionScore,
+      salienceAvg,
+      salienceStdDev,
       worldBriefUsed,
       scenarioLabel,
     },
@@ -395,6 +490,17 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       confidence: record.turn.confidence,
       fallbackReason: record.fallbackReason,
     })),
+    diagnostics: {
+      stanceCounts: {
+        organic: decisionSlots.organicCounts,
+        effective: decisionSlots.effectiveCounts,
+      },
+      forcedSlotsCount: decisionSlots.forcedSlots.length,
+      promotedEventsCount: worldState.active_events.length,
+      contradictionScore,
+      salienceAvg,
+      salienceStdDev,
+    },
   });
 
   const completeTimestamp = new Date().toISOString();
@@ -424,6 +530,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       posts_created: runSummary.postsCreated,
       delta: runSummary.delta,
       agents_used: runSummary.agentsUsed,
+      diagnostics: runSummary.diagnostics ?? null,
     },
     { onConflict: "session_id,cycle_number" },
   );
@@ -493,6 +600,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
 
     let delta = { cohesion: 0, trust: 0, noise: 0 };
     const executedTurns: ExecutedTurn[] = [];
+    const memorySaliences: number[] = [];
 
     for (const effectiveAgent of agentsUsed) {
       const persistedAgent = store.agents.find((agent) => agent.id === effectiveAgent.id);
@@ -569,18 +677,21 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         );
       }
 
+      const salience = computeMemorySalience({
+        turn,
+        memoryContent: turn.memoryContent,
+        postContent: turn.postContent,
+        recentFeed,
+        recentMemories,
+      });
+      memorySaliences.push(salience);
+
       const memoryEntry = AgentMemorySchema.parse({
         id: crypto.randomUUID(),
         agent_id: effectiveAgent.id,
         memory_type: "observation",
         content: turn.memoryContent,
-        salience: computeMemorySalience({
-          turn,
-          memoryContent: turn.memoryContent,
-          postContent: turn.postContent,
-          recentFeed,
-          recentMemories,
-        }),
+        salience,
         created_at: actionTimestamp,
         updated_at: actionTimestamp,
       });
@@ -627,6 +738,13 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       forcedSlotsCount: decisionSlots.forcedSlots.length,
       totalAgents: agentsUsed.length,
     });
+    const contradictionScore = buildContradictionScore({
+      turns: executedTurns,
+      effectiveStanceCounts: decisionSlots.effectiveCounts,
+      forcedSlotsCount: decisionSlots.forcedSlots.length,
+    });
+    const salienceAvg = round2(avg(memorySaliences));
+    const salienceStdDev = round2(stdDev(memorySaliences, salienceAvg));
 
     const worldState = buildWorldStateUpdate({
       cycleNumber,
@@ -651,6 +769,9 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           organicStanceCounts: decisionSlots.organicCounts,
           effectiveStanceCounts: decisionSlots.effectiveCounts,
           forcedSlotsCount: decisionSlots.forcedSlots.length,
+          contradictionScore,
+          salienceAvg,
+          salienceStdDev,
           worldBriefUsed,
           scenarioLabel,
         },
@@ -680,6 +801,17 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         confidence: record.turn.confidence,
         fallbackReason: record.fallbackReason,
       })),
+      diagnostics: {
+        stanceCounts: {
+          organic: decisionSlots.organicCounts,
+          effective: decisionSlots.effectiveCounts,
+        },
+        forcedSlotsCount: decisionSlots.forcedSlots.length,
+        promotedEventsCount: worldState.active_events.length,
+        contradictionScore,
+        salienceAvg,
+        salienceStdDev,
+      },
     });
 
     const completeTimestamp = new Date().toISOString();

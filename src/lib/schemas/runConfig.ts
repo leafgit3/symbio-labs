@@ -2,6 +2,11 @@ import { z } from "zod";
 
 export const DecisionStanceSchema = z.enum(["escalate", "contain", "monitor"]);
 export const StanceSourceSchema = z.enum(["organic", "orchestrator_fallback"]);
+export const StanceCountsSchema = z.object({
+  escalate: z.number().int().nonnegative(),
+  contain: z.number().int().nonnegative(),
+  monitor: z.number().int().nonnegative(),
+});
 
 export const AgentOverrideSchema = z.object({
   agentId: z.string().uuid(),
@@ -39,6 +44,19 @@ export const RunSummarySchema = z.object({
       fallbackReason: z.string().min(1).max(300).optional(),
     }),
   ),
+  diagnostics: z
+    .object({
+      stanceCounts: z.object({
+        organic: StanceCountsSchema,
+        effective: StanceCountsSchema,
+      }),
+      forcedSlotsCount: z.number().int().nonnegative(),
+      promotedEventsCount: z.number().int().nonnegative(),
+      contradictionScore: z.number().min(0).max(1),
+      salienceAvg: z.number().min(0).max(1),
+      salienceStdDev: z.number().min(0).max(1),
+    })
+    .optional(),
 });
 
 export const ScenarioMatrixItemSchema = z.object({

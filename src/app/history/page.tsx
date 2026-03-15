@@ -136,6 +136,39 @@ export default function HistoryPage() {
               </div>
 
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+                  diagnostics
+                </p>
+                {detailsQuery.data.runSummary?.diagnostics ? (
+                  <div style={{ display: "grid", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                      <span style={badgeStyle("neutral")}>
+                        organic e{detailsQuery.data.runSummary.diagnostics.stanceCounts.organic.escalate} c
+                        {detailsQuery.data.runSummary.diagnostics.stanceCounts.organic.contain} m
+                        {detailsQuery.data.runSummary.diagnostics.stanceCounts.organic.monitor}
+                      </span>
+                      <span style={badgeStyle("neutral")}>
+                        effective e{detailsQuery.data.runSummary.diagnostics.stanceCounts.effective.escalate} c
+                        {detailsQuery.data.runSummary.diagnostics.stanceCounts.effective.contain} m
+                        {detailsQuery.data.runSummary.diagnostics.stanceCounts.effective.monitor}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
+                      <KeyValue label="forced slots" value={String(detailsQuery.data.runSummary.diagnostics.forcedSlotsCount)} />
+                      <KeyValue label="promoted events" value={String(detailsQuery.data.runSummary.diagnostics.promotedEventsCount)} />
+                      <KeyValue label="contradiction" value={formatPercent(detailsQuery.data.runSummary.diagnostics.contradictionScore)} />
+                      <KeyValue
+                        label="salience avg/std"
+                        value={`${detailsQuery.data.runSummary.diagnostics.salienceAvg.toFixed(2)} / ${detailsQuery.data.runSummary.diagnostics.salienceStdDev.toFixed(2)}`}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--ink-soft)" }}>No diagnostics stored for this cycle.</p>
+                )}
+              </div>
+
+              <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
                 <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.35rem" }}>
                   world brief
                 </p>
@@ -209,6 +242,10 @@ function formatIso(value: string | null): string {
 
 function formatDelta(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
 }
 
 function KeyValue({ label, value }: { label: string; value: string }) {

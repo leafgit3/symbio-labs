@@ -132,6 +132,7 @@ export default function DashboardPage() {
     latestRunSummaryQuery.isLoading ||
     worldBriefQuery.isLoading;
   const isCycleRunning = runCycleMutation.isPending;
+  const latestDiagnostics = latestRunSummaryQuery.data?.diagnostics;
 
   function applyScenarioPreset(presetId: string) {
     setScenarioPresetId(presetId);
@@ -389,6 +390,34 @@ export default function DashboardPage() {
               <p style={{ color: "var(--ink-soft)" }}>No run summary yet.</p>
             )}
           </div>
+
+          <div style={{ marginTop: "0.65rem", border: "1px solid var(--line)", borderRadius: "0.55rem", padding: "0.6rem" }}>
+            <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+              cycle diagnostics
+            </p>
+            {latestDiagnostics ? (
+              <div style={{ display: "grid", gap: "0.45rem" }}>
+                <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+                  <span style={badgeStyle("neutral")}>
+                    stance organic e{latestDiagnostics.stanceCounts.organic.escalate} c{latestDiagnostics.stanceCounts.organic.contain} m
+                    {latestDiagnostics.stanceCounts.organic.monitor}
+                  </span>
+                  <span style={badgeStyle("neutral")}>
+                    stance effective e{latestDiagnostics.stanceCounts.effective.escalate} c{latestDiagnostics.stanceCounts.effective.contain} m
+                    {latestDiagnostics.stanceCounts.effective.monitor}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
+                  <KeyValue label="forced slots" value={String(latestDiagnostics.forcedSlotsCount)} />
+                  <KeyValue label="promoted events" value={String(latestDiagnostics.promotedEventsCount)} />
+                  <KeyValue label="contradiction" value={formatPercent(latestDiagnostics.contradictionScore)} />
+                  <KeyValue label="salience avg/std" value={`${latestDiagnostics.salienceAvg.toFixed(2)} / ${latestDiagnostics.salienceStdDev.toFixed(2)}`} />
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: "var(--ink-soft)" }}>No diagnostics yet.</p>
+            )}
+          </div>
         </Panel>
       </div>
 
@@ -533,6 +562,10 @@ function formatIso(value: string | null | undefined): string {
 
 function formatDelta(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
 }
 
 type Tone = "positive" | "warning" | "negative" | "neutral";

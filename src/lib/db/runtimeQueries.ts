@@ -555,6 +555,7 @@ export async function getLatestRunSummary(): Promise<RunSummary | null> {
     postsCreated: data.posts_created,
     delta: data.delta,
     agentsUsed: Array.isArray(data.agents_used) ? data.agents_used : [],
+    diagnostics: data.diagnostics && typeof data.diagnostics === "object" ? data.diagnostics : undefined,
   });
 }
 
@@ -626,6 +627,7 @@ export async function getCycleHistory(limit = 100): Promise<Array<{ cycleRun: Cy
           postsCreated: row.posts_created,
           delta: row.delta,
           agentsUsed: Array.isArray(row.agents_used) ? row.agents_used : [],
+          diagnostics: row.diagnostics && typeof row.diagnostics === "object" ? row.diagnostics : undefined,
         }),
       ]),
     );
@@ -774,6 +776,10 @@ export async function getCycleDetails(cycleNumber: number): Promise<{
           postsCreated: summaryResult.data.posts_created,
           delta: summaryResult.data.delta,
           agentsUsed: Array.isArray(summaryResult.data.agents_used) ? summaryResult.data.agents_used : [],
+          diagnostics:
+            summaryResult.data.diagnostics && typeof summaryResult.data.diagnostics === "object"
+              ? summaryResult.data.diagnostics
+              : undefined,
         })
       : null,
     feedPosts: (feedResult.data ?? []).map((row) =>

@@ -1,0 +1,59 @@
+Structural Update Report (Track D)
+Date: 2026-03-15
+
+Purpose
+- Add explicit diagnostics surfaces so reviewers can distinguish:
+  - organic stance diversity
+  - orchestrator fallback diversity
+  - event-promotion effects
+  - contradiction and salience behavior
+
+What changed
+
+1) Run summary diagnostics payload
+- Added optional diagnostics object to run summary schema:
+  - stanceCounts.organic
+  - stanceCounts.effective
+  - forcedSlotsCount
+  - promotedEventsCount
+  - contradictionScore
+  - salienceAvg
+  - salienceStdDev
+- File:
+  - src/lib/schemas/runConfig.ts
+
+2) Diagnostics persistence for cycle summaries
+- Added diagnostics column to cycle_run_summaries.
+- Migration:
+  - supabase/migrations/20260315104000_cycle_summary_diagnostics.sql
+- Migration has been pushed to remote.
+
+3) Runtime diagnostics computation
+- During cycle execution, runtime now computes:
+  - contradictionScore (mismatch + stance entropy + forced-slot factor)
+  - salience average and standard deviation
+- Stores diagnostics into run summary and cycle summary persistence.
+- File:
+  - src/lib/simulation/runCycle.ts
+
+4) Query/read path support
+- Summary readers now parse diagnostics when present.
+- File:
+  - src/lib/db/runtimeQueries.ts
+
+5) UI surfaces
+- Dashboard "Latest Cycle" now includes "cycle diagnostics" card showing:
+  - organic/effective stance counts
+  - forced slots
+  - promoted events
+  - contradiction score
+  - salience avg/std
+- History cycle details now includes diagnostics section with same signals.
+- Files:
+  - src/app/dashboard/page.tsx
+  - src/app/history/page.tsx
+
+Validation
+- npm run lint: passed
+- npm run build: passed
+- supabase db push: applied migration 20260315104000 successfully
