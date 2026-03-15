@@ -1,0 +1,64 @@
+Hi Leaf, quick runtime feedback from our latest controlled tests.
+
+First: the prototype is already genuinely useful. The external Citadel MVP is working as a real lab surface, with persistent agents, feed, event logs, per-agent memory, history, and world-state metrics. So this is not a “the project failed” message. It is more a “the current bottleneck has become legible” message.
+
+What we tested:
+We ran controlled cycles specifically designed to force visible disagreement around a delicate vault-coordination scenario. The explicit goal was to make at least one stance lean toward escalation, at least one toward containment, and at least one toward unresolved-but-monitored.
+
+Importantly, we did not just lightly tweak wording. We tried two levels of intervention:
+1. We edited the previously existing agents to reduce semantic overlap and sharpen function.
+2. We also created 7 new agents to widen the behavioral field and test whether the issue was simply a matter of missing roles.
+
+So this was not a single-pass prompt adjustment. It was a broader attempt to change the agent ecology itself.
+
+Among the edits/new roles we were testing:
+- Harbor should translate disagreement rather than repeat Kite
+- Kite should coordinate escalation/containment criteria rather than just monitor
+- Quill should name the difference between weak signal / active event / consoling narrative
+- Nacre and Vellum should test when beauty clarifies versus softens reality
+- Ember should focus on subtle coercion/manipulation rather than generic prudence
+
+What happened:
+Despite both the agent edits and the addition of 7 new agents, the same structural pattern persisted. In Cycle 5, almost every agent still converged on some variant of “monitor, do not promote, no containment yet.” The scenario explicitly asked the system not to default to consensus, but consensus re-formed anyway. Active events remained at 0. Cycle delta was cohesion +2.8, trust -2.4, noise +4.0. Memory alignment was 4% and marked as drifting, while average salience remained flat at 0.65.
+
+Our current interpretation:
+At this point, the main issue no longer looks like agent wording or missing agent variety alone. We have already tried both role differentiation and agent expansion, and the runtime still seems to reward stability and convergence more strongly than legible internal divergence. The system can produce stylistic variation, and even some feed-vs-memory mismatch, but it still struggles to generate genuinely distinct positions with clear institutional consequences.
+
+That is why our current conclusion is that the bottleneck is structural:
+not just in agent copy,
+not just in missing roles,
+but in orchestration, decision architecture, promotion logic, and/or memory weighting.
+
+Concrete symptoms we observed:
+1. Consensus re-forms too easily, even under a disagreement-forcing scenario.
+2. Event promotion remains institutionally weak or absent.
+3. Some agents still collapse into near-neighbor functions at runtime even after edits.
+4. Even with 7 additional agents, the wider ecology still tends to collapse back toward the same behavioral basin.
+5. Memory salience appears too flat to help the system prioritize contradictions meaningfully.
+6. Feed/memory divergence exists, but often as phrasing mismatch rather than productive strategic divergence.
+
+Structural changes that might be worth exploring:
+1. Decision-slot enforcement
+Instead of only prompting for disagreement, explicitly require the cycle runner to produce at least one escalation candidate, one containment candidate, and one unresolved candidate before synthesis.
+
+2. Stronger role-to-action constraints
+Right now roles can still drift back into the same behavioral basin. It may help if certain agents are not only descriptively different, but mechanically constrained to output different decision types or thresholds.
+
+3. Event-promotion logic outside agent prose
+If promotion to active event depends too much on emergent prose consensus, the system may remain conservative forever. A separate promotion layer or thresholding mechanism could help.
+
+4. Salience stratification
+Memory salience seems too uniform. It may help if contradiction-rich memories, threshold-relevant signals, or public/private mismatches are automatically upweighted.
+
+5. Anti-convergence pressure in synthesis/orchestration
+The runtime may need an explicit bias against premature reconciliation, so disagreement survives long enough to become legible rather than being smoothed out by the loop.
+
+6. Better separation between “translation” and “coordination”
+Harbor and Kite can still end up orbiting the same stabilizing behavior. The system may need stronger orchestration-level separation between “make conflict legible” and “maintain continuity.”
+
+So the short version is:
+the prototype is working,
+the tests were useful,
+we tried both editing the existing agents and adding 7 new ones,
+the same failure mode persisted,
+and that makes us think the next gains are more likely to come from structural changes in orchestration, decision architecture, event promotion, and memory weighting than from another round of agent copy edits.
