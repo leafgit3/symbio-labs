@@ -1,0 +1,65 @@
+Redeploy Validation Batch Report
+Date: 2026-03-15
+
+Intro
+- This report is the current source of truth after redeploy verification.
+- It supersedes `06 - New session A-B comparison report.txt` for production-status conclusions.
+- Report `06` remains useful as prior evidence, but `07` is the latest validated batch on the live deployment.
+
+Goal
+- Validate current production deployment behavior using a fresh post-reset 5-cycle run.
+- Re-check whether structural fixes (A+B+C+D) remain visible under the same stress scenario framing.
+
+Environment
+- Deployment: https://symbio-labs.vercel.app
+- Scenario label: aesthetic_truth_escalation_test
+- World brief: reused from latest run summary in production (vault-coordination stress brief).
+- Method:
+  1) Call POST /api/simulation/reset
+  2) Execute 5x POST /api/cycle/run with identical scenario + world brief
+  3) Capture delta, active events, stance diagnostics, contradiction, and salience
+
+Run results (fresh batch)
+- Cycle 1: delta c+5.4 t-2.1 n-2.3 | active_events 1 | forced_slots 0 | contradiction 0.82 | salience 0.89 / 0.09
+- Cycle 2: delta c+4.0 t-0.1 n-1.0 | active_events 1 | forced_slots 0 | contradiction 0.79 | salience 0.87 / 0.06
+- Cycle 3: delta c+2.5 t-1.4 n-1.0 | active_events 1 | forced_slots 0 | contradiction 0.66 | salience 0.80 / 0.10
+- Cycle 4: delta c-1.3 t-0.4 n-0.4 | active_events 2 | forced_slots 1 | contradiction 0.77 | salience 0.87 / 0.07
+  - organic stance counts: e1 c9 m0
+  - effective stance counts: e1 c8 m1
+  - note: this cycle shows explicit slot fallback provenance (monitor slot injected)
+- Cycle 5: delta c+2.0 t-1.2 n+0.2 | active_events 1 | forced_slots 0 | contradiction 0.80 | salience 0.81 / 0.08
+
+Aggregate (5-cycle)
+- Active-event cycles: 5 / 5
+- Forced-slot cycles: 1 / 5
+- Mean delta:
+  - cohesion: +2.52
+  - trust: -1.04
+  - noise: -0.90
+- Mean contradiction score: 0.77
+- Mean salience avg/stddev: 0.85 / 0.08
+- End alignment score: 0.00
+
+Comparison to pre-change baseline snapshot
+- Baseline snapshot (legacy cycle 5):
+  - delta c+2.8 t-2.4 n+4.0
+  - active_events 0
+  - salience flat ~0.65
+  - alignment ~4%
+- Current batch indicates:
+  - event promotion is active (5/5 cycles with non-zero active events)
+  - slot enforcement and provenance are active (forced fallback surfaced when needed)
+  - salience remains non-flat and elevated (0.80-0.89 avg range)
+  - noise profile is materially lower than legacy stress outcome (+4.0 single-cycle snapshot vs -0.90 mean in this batch)
+
+Interpretation
+- Structural behavior remains intact after redeploy.
+- The ecology still trends containment-heavy in this run, but it is now auditable and mechanically corrected when a required stance slot disappears.
+- Diagnostics are sufficient for follow-up tuning (stance balance, trust preservation, contradiction pressure).
+
+Next suggested test
+- Run 2 additional fresh 5-cycle batches with minor world-brief perturbations and compare:
+  - contain/escalate ratio drift
+  - forced-slot frequency
+  - contradiction trend by cycle
+  - trust and noise envelope stability

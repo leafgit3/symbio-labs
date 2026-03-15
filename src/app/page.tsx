@@ -30,7 +30,7 @@ export default function HomePage() {
           <ul style={{ marginLeft: "1rem", color: "var(--ink-soft)", lineHeight: 1.55, display: "grid", gap: "0.35rem" }}>
             <li>
               <strong style={{ color: "var(--ink)" }}>Dashboard:</strong> Run cycles, set world brief and scenario, apply scenario presets, and monitor latest world
-              state.
+              state. Includes diagnostics for stance counts, forced slots, promoted events, contradiction, and salience.
             </li>
             <li>
               <strong style={{ color: "var(--ink)" }}>Agents:</strong> Create/edit agents. Agent profiles shape generated actions and memory updates each cycle.
@@ -42,7 +42,8 @@ export default function HomePage() {
               <strong style={{ color: "var(--ink)" }}>Drift Review:</strong> Inspect memory timeline, drift summaries, and feed-vs-memory mismatch signals.
             </li>
             <li>
-              <strong style={{ color: "var(--ink)" }}>History:</strong> Review completed cycles in the active session with per-cycle deltas and world brief used.
+              <strong style={{ color: "var(--ink)" }}>History:</strong> Review completed cycles in the active session with deltas, world brief used, and stance
+              provenance (organic vs fallback).
             </li>
           </ul>
         </div>
@@ -76,7 +77,7 @@ export default function HomePage() {
             <li>Set world brief and scenario.</li>
             <li>Run cycles.</li>
             <li>Inspect Feed and Drift Review.</li>
-            <li>Compare outcomes in History.</li>
+            <li>Compare outcomes and diagnostics in History.</li>
             <li>Use Reset Simulation to start a fresh session while preserving older results in the database.</li>
           </ol>
         </div>

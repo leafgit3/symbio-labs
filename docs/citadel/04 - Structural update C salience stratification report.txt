@@ -4,6 +4,7 @@ Date: 2026-03-15
 Purpose
 - Extend structural work after Track A+B with salience stratification.
 - Replace flat memory salience with signal-aware dynamic scoring.
+- Provide a measurable memory-priority signal that can be surfaced in cycle diagnostics.
 
 What changed
 
@@ -25,14 +26,20 @@ What changed
 - Updated file:
   - src/lib/simulation/runCycle.ts
 
+3) Track D dependency alignment
+- Track C outputs are now consumed by Track D diagnostics:
+  - salienceAvg
+  - salienceStdDev
+- These are persisted per cycle in `cycle_run_summaries.diagnostics` and shown in Dashboard/History.
+
 Validation
 - npm run lint: passed
 - npm run build: passed
+- Live API verification after redeploy:
+  - `/api/agent-memories` shows non-flat salience values
+  - latest cycle diagnostics include salience average + stddev
+  - example observed values in production run: `salienceAvg 0.82`, `salienceStdDev 0.08`
 
 Expected effect
 - Memory salience should now vary across cycles/agents.
 - Contradiction-rich and threshold-relevant memories should be prioritized over neutral repetitive records.
-
-Remaining work
-- Track D full diagnostics surface (dashboard/history cards for contradiction score and salience distribution).
-- Optional: add explicit per-cycle salience variance metric into run summary payload/history table.

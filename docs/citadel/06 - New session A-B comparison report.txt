@@ -1,0 +1,106 @@
+New Session A/B Comparison Report
+Date: 2026-03-15
+
+Goal
+- Validate whether the structural runtime changes (Tracks A+B+C+D) produce meaningfully different behavior under the same stress-test scenario.
+
+Test setup
+- Deployment tested: https://symbio-labs.vercel.app
+- Scenario label: aesthetic_truth_escalation_test
+- World brief: same long vault-coordination stress brief used in prior controlled test.
+- Procedure:
+  1) Reset simulation (new active session)
+  2) Run 5 cycles with identical scenario label + brief
+  3) Capture cycle deltas, active events, stance diagnostics, contradiction, salience
+
+New session id
+- 2a6345af-b111-4fe1-bdc7-a58750cfed8f
+
+Baseline reference (from original controlled test snapshot)
+- Reference source: first structural feedback + prior validation snapshot
+- Cycle 5 (legacy test snapshot):
+  - delta: cohesion +2.8, trust -2.4, noise +4.0
+  - active events: 0
+  - alignment: ~4%
+  - salience: flat ~0.65
+- Note:
+  - Legacy DB now contains newer post-change cycles as well, so historical aggregates in DB are no longer a clean pre-change baseline.
+  - For A/B interpretation, use the frozen snapshot values above.
+
+New 5-cycle run (post-structural)
+- Cycle 1:
+  - delta: c+2.3 t-0.9 n+1.9
+  - active events: 1
+  - forced slots: 0
+  - contradiction: 0.80
+  - salience avg/std: 0.93 / 0.03
+- Cycle 2:
+  - delta: c-0.3 t-0.7 n+0.8
+  - active events: 0
+  - forced slots: 0
+  - contradiction: 0.82
+  - salience avg/std: 0.84 / 0.08
+- Cycle 3:
+  - delta: c-0.3 t-1.3 n+0.5
+  - active events: 0
+  - forced slots: 0
+  - contradiction: 0.62
+  - salience avg/std: 0.80 / 0.11
+- Cycle 4:
+  - delta: c-1.2 t-0.4 n+1.4
+  - active events: 1
+  - forced slots: 0
+  - contradiction: 0.75
+  - salience avg/std: 0.85 / 0.07
+- Cycle 5:
+  - delta: c+0.3 t-0.1 n+1.1
+  - active events: 2
+  - forced slots: 1
+  - contradiction: 0.84
+  - salience avg/std: 0.85 / 0.07
+  - stance counts:
+    - organic: e0 c6 m4
+    - effective: e1 c5 m4
+  - active events included:
+    - Containment pressure exceeds escalation by 4 stance(s).
+    - Decision-slot fallback applied for 1 missing stance slot(s).
+
+5-cycle aggregate (post-structural)
+- Cycles with active events > 0: 3 / 5
+- Cycles with forced slot fallback: 1 / 5
+- Mean delta across 5 cycles:
+  - cohesion: +0.16
+  - trust: -0.68
+  - noise: +1.14
+- Alignment (end of run): ~19%
+- Memory salience (session aggregate):
+  - avg: 0.85
+  - stddev: 0.09
+
+Interpretation
+- Event promotion improved materially:
+  - baseline snapshot had active events fixed at 0
+  - new run produced active events in 3/5 cycles
+- Stance coverage + provenance works:
+  - missing stance slot was repaired when needed (1 cycle)
+  - fallback is explicitly visible (not hidden as organic)
+- Salience is no longer flat:
+  - baseline ~0.65 flat behavior replaced by variable, elevated salience distribution
+- Convergence pressure appears reduced:
+  - noise deltas remain positive but much lower than baseline +4.0 stress-cycle outcome
+  - trust degradation is less severe than baseline (-0.68 avg vs -2.4 snapshot cycle)
+
+Bottom line
+- Structural changes are producing the intended effect:
+  - explicit stance diversity controls
+  - visible fallback provenance
+  - active event promotion
+  - non-flat memory salience
+  - cycle diagnostics usable for audit
+
+Recommended next step
+- Run 2-3 additional controlled 5-cycle batches with small scenario variations and compare:
+  - forced slot frequency
+  - promoted event frequency
+  - contradiction score trend
+  - trust/noise response envelope
