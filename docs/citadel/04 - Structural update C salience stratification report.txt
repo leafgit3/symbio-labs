@@ -1,0 +1,38 @@
+Structural Update Report (Track C)
+Date: 2026-03-15
+
+Purpose
+- Extend structural work after Track A+B with salience stratification.
+- Replace flat memory salience with signal-aware dynamic scoring.
+
+What changed
+
+1) New dynamic salience scorer
+- Added:
+  - src/lib/simulation/salience.ts
+- New scorer computes memory salience from:
+  - novelty vs recent memories
+  - contradiction vs recent feed
+  - public/private mismatch (memory vs posted content)
+  - threshold-relevant terms (evidence/escalation/containment/promotion/risk)
+  - contradiction cues in memory language
+  - stance pressure (non-monitor stances slightly upweighted)
+  - no-op penalty
+- Output range is clamped to 0.20-0.95 and rounded to 2 decimals.
+
+2) Runtime integration (Supabase + in-memory)
+- Replaced fixed `salience: 0.65` in both runtime paths with dynamic salience computation.
+- Updated file:
+  - src/lib/simulation/runCycle.ts
+
+Validation
+- npm run lint: passed
+- npm run build: passed
+
+Expected effect
+- Memory salience should now vary across cycles/agents.
+- Contradiction-rich and threshold-relevant memories should be prioritized over neutral repetitive records.
+
+Remaining work
+- Track D full diagnostics surface (dashboard/history cards for contradiction score and salience distribution).
+- Optional: add explicit per-cycle salience variance metric into run summary payload/history table.

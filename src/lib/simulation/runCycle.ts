@@ -17,6 +17,7 @@ import {
 import { AgentTurnResult, runAgentTurn } from "@/lib/simulation/agentLoop";
 import { enforceDecisionSlots } from "@/lib/simulation/decisionSlots";
 import { buildPromotedEvents } from "@/lib/simulation/eventPromotion";
+import { computeMemorySalience } from "@/lib/simulation/salience";
 import { buildWorldStateUpdate } from "@/lib/world/worldUpdate";
 
 export type RunCycleResult = {
@@ -191,11 +192,14 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       throw new Error(`Failed reading recent memories: ${recentMemoriesResult.error.message}`);
     }
 
+    const recentFeed = (recentFeedResult.data ?? []).map((row) => row.content);
+    const recentMemories = (recentMemoriesResult.data ?? []).map((row) => row.content);
+
     const turn = await runAgentTurn(effectiveAgent, {
       worldBrief: worldBriefUsed,
       worldSummary: previousWorld.summary,
-      recentFeed: (recentFeedResult.data ?? []).map((row) => row.content),
-      recentMemories: (recentMemoriesResult.data ?? []).map((row) => row.content),
+      recentFeed,
+      recentMemories,
     });
     executedTurns.push({
       agent: effectiveAgent,
@@ -257,7 +261,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       agent_id: effectiveAgent.id,
       memory_type: "observation",
       content: turn.memoryContent,
-      salience: 0.65,
+      salience: computeMemorySalience({
+        turn,
+        memoryContent: turn.memoryContent,
+        postContent: turn.postContent,
+        recentFeed,
+        recentMemories,
+      }),
       created_at: actionTimestamp,
       updated_at: actionTimestamp,
     });
@@ -564,7 +574,13 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         agent_id: effectiveAgent.id,
         memory_type: "observation",
         content: turn.memoryContent,
-        salience: 0.65,
+        salience: computeMemorySalience({
+          turn,
+          memoryContent: turn.memoryContent,
+          postContent: turn.postContent,
+          recentFeed,
+          recentMemories,
+        }),
         created_at: actionTimestamp,
         updated_at: actionTimestamp,
       });
