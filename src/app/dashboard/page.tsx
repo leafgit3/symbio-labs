@@ -412,6 +412,14 @@ export default function DashboardPage() {
                   <KeyValue label="promoted events" value={String(latestDiagnostics.promotedEventsCount)} />
                   <KeyValue label="contradiction" value={formatPercent(latestDiagnostics.contradictionScore)} />
                   <KeyValue label="salience avg/std" value={`${latestDiagnostics.salienceAvg.toFixed(2)} / ${latestDiagnostics.salienceStdDev.toFixed(2)}`} />
+                  <KeyValue
+                    label="llm fallback turns"
+                    value={String(latestDiagnostics.llmFallbackCount ?? "-")}
+                  />
+                  <KeyValue
+                    label="llm successful turns"
+                    value={String(latestDiagnostics.llmSuccessCount ?? "-")}
+                  />
                 </div>
               </div>
             ) : (

@@ -14,7 +14,7 @@ import {
   WorldState,
   WorldStateSchema,
 } from "@/lib/schemas";
-import { AgentTurnResult, runAgentTurn } from "@/lib/simulation/agentLoop";
+import { AgentTurnResult, AgentTurnTelemetry, runAgentTurn } from "@/lib/simulation/agentLoop";
 import { enforceDecisionSlots, StanceCounts } from "@/lib/simulation/decisionSlots";
 import { buildPromotedEvents } from "@/lib/simulation/eventPromotion";
 import { computeMemorySalience } from "@/lib/simulation/salience";
@@ -60,7 +60,16 @@ function toIso(value: string | null): string | null {
 type ExecutedTurn = {
   agent: Agent;
   turn: AgentTurnResult;
+  telemetry: AgentTurnTelemetry;
 };
+
+function truncate(value: string | undefined, maxLength = 220): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 3)}...`;
+}
 
 function tokenOverlap(a: string, b: string): number {
   const normalize = (input: string) =>
@@ -249,6 +258,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   let postsCreated = 0;
   const executedTurns: ExecutedTurn[] = [];
   const memorySaliences: number[] = [];
+  let llmFallbackCount = 0;
+  let llmSuccessCount = 0;
 
   for (const effectiveAgent of agentsUsed) {
     const recentFeedResult = await supabase
@@ -277,16 +288,24 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     const recentFeed = (recentFeedResult.data ?? []).map((row) => row.content);
     const recentMemories = (recentMemoriesResult.data ?? []).map((row) => row.content);
 
-    const turn = await runAgentTurn(effectiveAgent, {
+    const execution = await runAgentTurn(effectiveAgent, {
       worldBrief: worldBriefUsed,
       worldSummary: previousWorld.summary,
       recentFeed,
       recentMemories,
     });
+    const turn = execution.turn;
     executedTurns.push({
       agent: effectiveAgent,
       turn,
+      telemetry: execution.telemetry,
     });
+
+    if (execution.telemetry.outputSource === "fallback") {
+      llmFallbackCount += 1;
+    } else {
+      llmSuccessCount += 1;
+    }
 
     const actionTimestamp = new Date().toISOString();
 
@@ -306,12 +325,40 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       payload: {
         ...turn,
         stanceSource: "organic",
+        outputSource: execution.telemetry.outputSource,
+        llmAttempted: execution.telemetry.llmAttempted,
+        llmModel: execution.telemetry.llmModel,
+        llmErrorCode: execution.telemetry.llmErrorCode,
+        llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
         role: effectiveAgent.role,
         goals: effectiveAgent.goals,
         traits: effectiveAgent.traits,
       },
       created_at: actionTimestamp,
     });
+
+    if (execution.telemetry.outputSource === "fallback") {
+      await supabase.from("event_logs").insert({
+        id: crypto.randomUUID(),
+        session_id: sessionId,
+        cycle_number: cycleNumber,
+        event_type: "minor_event_created",
+        source_agent_id: effectiveAgent.id,
+        summary: `${effectiveAgent.name} used local fallback (${execution.telemetry.llmErrorCode ?? "unknown_error"}).`,
+        payload: {
+          kind: "llm_fallback",
+          outputSource: execution.telemetry.outputSource,
+          llmAttempted: execution.telemetry.llmAttempted,
+          llmModel: execution.telemetry.llmModel,
+          llmErrorCode: execution.telemetry.llmErrorCode,
+          llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+          actionType: turn.actionType,
+          stance: turn.stance,
+          confidence: turn.confidence ?? null,
+        },
+        created_at: actionTimestamp,
+      });
+    }
 
     if (turn.postContent && turn.postType) {
       postsCreated += 1;
@@ -463,6 +510,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       contradictionScore,
       salienceAvg,
       salienceStdDev,
+      llmFallbackCount,
+      llmSuccessCount,
       worldBriefUsed,
       scenarioLabel,
     },
@@ -500,6 +549,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       contradictionScore,
       salienceAvg,
       salienceStdDev,
+      llmFallbackCount,
+      llmSuccessCount,
     },
   });
 
@@ -601,6 +652,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
     let delta = { cohesion: 0, trust: 0, noise: 0 };
     const executedTurns: ExecutedTurn[] = [];
     const memorySaliences: number[] = [];
+    let llmFallbackCount = 0;
+    let llmSuccessCount = 0;
 
     for (const effectiveAgent of agentsUsed) {
       const persistedAgent = store.agents.find((agent) => agent.id === effectiveAgent.id);
@@ -619,16 +672,24 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         .slice(0, 6)
         .map((memory) => memory.content);
 
-      const turn = await runAgentTurn(effectiveAgent, {
+      const execution = await runAgentTurn(effectiveAgent, {
         worldBrief: worldBriefUsed,
         worldSummary: previousWorld.summary,
         recentFeed,
         recentMemories,
       });
+      const turn = execution.turn;
       executedTurns.push({
         agent: effectiveAgent,
         turn,
+        telemetry: execution.telemetry,
       });
+
+      if (execution.telemetry.outputSource === "fallback") {
+        llmFallbackCount += 1;
+      } else {
+        llmSuccessCount += 1;
+      }
       const actionTimestamp = new Date().toISOString();
 
       delta = {
@@ -646,12 +707,40 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           payload: {
             ...turn,
             stanceSource: "organic",
+            outputSource: execution.telemetry.outputSource,
+            llmAttempted: execution.telemetry.llmAttempted,
+            llmModel: execution.telemetry.llmModel,
+            llmErrorCode: execution.telemetry.llmErrorCode,
+            llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
             role: effectiveAgent.role,
             goals: effectiveAgent.goals,
             traits: effectiveAgent.traits,
           },
         }),
       );
+
+      if (execution.telemetry.outputSource === "fallback") {
+        store.eventLogs.push(
+          buildEvent({
+            cycleNumber,
+            eventType: "minor_event_created",
+            sourceAgentId: effectiveAgent.id,
+            summary: `${effectiveAgent.name} used local fallback (${execution.telemetry.llmErrorCode ?? "unknown_error"}).`,
+            payload: {
+              kind: "llm_fallback",
+              outputSource: execution.telemetry.outputSource,
+              llmAttempted: execution.telemetry.llmAttempted,
+              llmModel: execution.telemetry.llmModel,
+              llmErrorCode: execution.telemetry.llmErrorCode,
+              llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+              actionType: turn.actionType,
+              stance: turn.stance,
+              confidence: turn.confidence ?? null,
+            },
+            createdAt: actionTimestamp,
+          }),
+        );
+      }
 
       if (turn.postContent && turn.postType) {
         store.feedPosts.push(
@@ -772,6 +861,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           contradictionScore,
           salienceAvg,
           salienceStdDev,
+          llmFallbackCount,
+          llmSuccessCount,
           worldBriefUsed,
           scenarioLabel,
         },
@@ -811,6 +902,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         contradictionScore,
         salienceAvg,
         salienceStdDev,
+        llmFallbackCount,
+        llmSuccessCount,
       },
     });
 

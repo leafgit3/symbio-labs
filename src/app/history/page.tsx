@@ -32,6 +32,26 @@ export default function HistoryPage() {
     }));
   }, [historyQuery.data]);
 
+  const llmFallbackRows = useMemo(() => {
+    if (!detailsQuery.data) {
+      return [];
+    }
+
+    return detailsQuery.data.eventLogs
+      .filter((event) => event.event_type === "minor_event_created" && isLlmFallbackPayload(event.payload))
+      .map((event) => {
+        const payload = event.payload;
+
+        return {
+          created_at: formatIso(event.created_at),
+          model: payload.llmModel ?? "-",
+          error_code: payload.llmErrorCode ?? "-",
+          detail: payload.llmErrorDetail ?? "-",
+          action: `${payload.actionType ?? "-"} (${payload.stance ?? "-"})`,
+        };
+      });
+  }, [detailsQuery.data]);
+
   return (
     <main>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
@@ -161,11 +181,30 @@ export default function HistoryPage() {
                         label="salience avg/std"
                         value={`${detailsQuery.data.runSummary.diagnostics.salienceAvg.toFixed(2)} / ${detailsQuery.data.runSummary.diagnostics.salienceStdDev.toFixed(2)}`}
                       />
+                      <KeyValue label="llm fallback turns" value={String(detailsQuery.data.runSummary.diagnostics.llmFallbackCount ?? "-")} />
+                      <KeyValue label="llm successful turns" value={String(detailsQuery.data.runSummary.diagnostics.llmSuccessCount ?? "-")} />
                     </div>
                   </div>
                 ) : (
                   <p style={{ color: "var(--ink-soft)" }}>No diagnostics stored for this cycle.</p>
                 )}
+              </div>
+
+              <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
+                <p className="code" style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginBottom: "0.45rem" }}>
+                  llm fallback events
+                </p>
+                <DataTable
+                  rows={llmFallbackRows}
+                  emptyLabel="No LLM fallback events in this cycle."
+                  columns={[
+                    { key: "created_at", label: "Created", noWrap: true },
+                    { key: "model", label: "Model", noWrap: true },
+                    { key: "error_code", label: "Error", noWrap: true },
+                    { key: "action", label: "Action", noWrap: true },
+                    { key: "detail", label: "Detail" },
+                  ]}
+                />
               </div>
 
               <div style={{ border: "1px solid var(--line)", borderRadius: "0.6rem", padding: "0.7rem" }}>
@@ -328,4 +367,15 @@ function deltaTone(metric: "cohesion" | "trust" | "noise", value: number): Tone 
   }
 
   return "neutral";
+}
+
+function isLlmFallbackPayload(payload: Record<string, unknown>): payload is {
+  kind: "llm_fallback";
+  llmModel?: string;
+  llmErrorCode?: string;
+  llmErrorDetail?: string;
+  actionType?: string;
+  stance?: string;
+} {
+  return payload.kind === "llm_fallback";
 }

@@ -380,23 +380,43 @@ export async function getFeedPosts(limit = 50): Promise<FeedPost[]> {
   );
 }
 
-export async function getEventLogs(limit = 120): Promise<EventLog[]> {
+export async function getEventLogs(options?: {
+  limit?: number;
+  eventType?: EventLog["event_type"];
+  cycleNumber?: number;
+}): Promise<EventLog[]> {
+  const limit = options?.limit ?? 120;
   const supabase = getSupabaseServiceClient();
   if (!supabase) {
     const store = readStore();
-    return [...store.eventLogs]
+    let rows = [...store.eventLogs];
+
+    if (options?.eventType) {
+      rows = rows.filter((item) => item.event_type === options.eventType);
+    }
+
+    if (typeof options?.cycleNumber === "number") {
+      rows = rows.filter((item) => item.cycle_number === options.cycleNumber);
+    }
+
+    return rows
       .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
       .slice(0, limit);
   }
 
   const { sessionId } = await getOrCreateSimulationContext();
 
-  const { data, error } = await supabase
-    .from("event_logs")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  let query = supabase.from("event_logs").select("*").eq("session_id", sessionId);
+
+  if (options?.eventType) {
+    query = query.eq("event_type", options.eventType);
+  }
+
+  if (typeof options?.cycleNumber === "number") {
+    query = query.eq("cycle_number", options.cycleNumber);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
 
   if (error || !data) {
     throw new Error(`Failed to read event_logs: ${error?.message ?? "unknown"}`);

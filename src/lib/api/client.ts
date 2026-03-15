@@ -74,6 +74,29 @@ export function fetchEvents(): Promise<EventLog[]> {
   return request("/api/events", z.array(EventLogSchema));
 }
 
+export function fetchEventsFiltered(input?: {
+  limit?: number;
+  cycleNumber?: number;
+  eventType?: EventLog["event_type"];
+}): Promise<EventLog[]> {
+  const params = new URLSearchParams();
+
+  if (typeof input?.limit === "number") {
+    params.set("limit", String(input.limit));
+  }
+
+  if (typeof input?.cycleNumber === "number") {
+    params.set("cycleNumber", String(input.cycleNumber));
+  }
+
+  if (input?.eventType) {
+    params.set("eventType", input.eventType);
+  }
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request(`/api/events${suffix}`, z.array(EventLogSchema));
+}
+
 export function fetchLatestCycle(): Promise<CycleRun> {
   return request("/api/cycles/latest", CycleRunSchema);
 }

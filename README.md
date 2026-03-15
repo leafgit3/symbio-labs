@@ -65,7 +65,10 @@ Primary app URL: `http://localhost:3000/dashboard`
   - salience now reacts to novelty/contradiction/mismatch signals
 - Diagnostics surface:
   - per-cycle diagnostics persisted in `cycle_run_summaries.diagnostics`
-  - Dashboard + History show stance counts, forced slots, promoted events, contradiction score, salience avg/stddev
+  - Dashboard + History show stance counts, forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts
+- LLM runtime observability:
+  - each `agent_action` event now includes `outputSource`, `llmAttempted`, `llmModel`, and LLM error metadata when fallback is used
+  - fallback/error transitions are recorded as `minor_event_created` with payload `kind: "llm_fallback"`
 
 Related migration:
 - `supabase/migrations/20260315104000_cycle_summary_diagnostics.sql`
@@ -118,6 +121,11 @@ Scenario/history:
 - `GET /api/cycles/history`
 - `GET /api/cycles/history/:cycleNumber`
 - `POST /api/testing/run-matrix`
+
+Event log filters:
+- `GET /api/events?eventType=minor_event_created`
+- `GET /api/events?cycleNumber=5`
+- `GET /api/events?eventType=minor_event_created&cycleNumber=5`
 
 Matrix run example:
 

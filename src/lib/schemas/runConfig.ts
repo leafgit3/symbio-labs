@@ -55,6 +55,8 @@ export const RunSummarySchema = z.object({
       contradictionScore: z.number().min(0).max(1),
       salienceAvg: z.number().min(0).max(1),
       salienceStdDev: z.number().min(0).max(1),
+      llmFallbackCount: z.number().int().nonnegative().optional(),
+      llmSuccessCount: z.number().int().nonnegative().optional(),
     })
     .optional(),
 });

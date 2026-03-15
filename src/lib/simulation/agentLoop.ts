@@ -61,6 +61,19 @@ export type AgentTurnContext = {
   recentMemories: string[];
 };
 
+export type AgentTurnTelemetry = {
+  outputSource: "llm" | "fallback";
+  llmAttempted: boolean;
+  llmModel?: string;
+  llmErrorCode?: string;
+  llmErrorDetail?: string;
+};
+
+export type AgentTurnExecution = {
+  turn: AgentTurnResult;
+  telemetry: AgentTurnTelemetry;
+};
+
 function normalizeAgentTurn(result: z.infer<typeof AgentTurnResultSchema>): AgentTurnResult {
   return {
     actionType: result.actionType,
@@ -125,8 +138,18 @@ function fallbackAgentTurn(agent: Agent): AgentTurnResult {
   };
 }
 
-export async function runAgentTurn(agent: Agent, context: AgentTurnContext): Promise<AgentTurnResult> {
-  const llmOutput = await requestAgentTurnFromLlm({
+function summarizeZodError(error: z.ZodError): string {
+  const firstIssue = error.issues[0];
+  if (!firstIssue) {
+    return "Schema validation failed.";
+  }
+
+  const path = firstIssue.path.length ? firstIssue.path.join(".") : "root";
+  return `${path}: ${firstIssue.message}`;
+}
+
+export async function runAgentTurn(agent: Agent, context: AgentTurnContext): Promise<AgentTurnExecution> {
+  const llmResult = await requestAgentTurnFromLlm({
     agent,
     worldBrief: context.worldBrief,
     worldSummary: context.worldSummary,
@@ -134,14 +157,39 @@ export async function runAgentTurn(agent: Agent, context: AgentTurnContext): Pro
     recentMemories: context.recentMemories,
   });
 
-  if (!llmOutput) {
-    return fallbackAgentTurn(agent);
+  if (!llmResult.ok) {
+    return {
+      turn: fallbackAgentTurn(agent),
+      telemetry: {
+        outputSource: "fallback",
+        llmAttempted: llmResult.attempted,
+        llmModel: llmResult.model,
+        llmErrorCode: llmResult.errorCode,
+        llmErrorDetail: llmResult.errorDetail,
+      },
+    };
   }
 
-  const parsed = AgentTurnResultSchema.safeParse(llmOutput);
+  const parsed = AgentTurnResultSchema.safeParse(llmResult.output);
   if (!parsed.success) {
-    return fallbackAgentTurn(agent);
+    return {
+      turn: fallbackAgentTurn(agent),
+      telemetry: {
+        outputSource: "fallback",
+        llmAttempted: true,
+        llmModel: llmResult.model,
+        llmErrorCode: "schema_validation_failed",
+        llmErrorDetail: summarizeZodError(parsed.error),
+      },
+    };
   }
 
-  return normalizeAgentTurn(parsed.data);
+  return {
+    turn: normalizeAgentTurn(parsed.data),
+    telemetry: {
+      outputSource: "llm",
+      llmAttempted: true,
+      llmModel: llmResult.model,
+    },
+  };
 }

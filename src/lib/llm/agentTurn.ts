@@ -8,6 +8,28 @@ export type AgentTurnInput = {
   recentMemories: string[];
 };
 
+export type LlmFailureCode =
+  | "missing_config"
+  | "network_error"
+  | "http_error"
+  | "empty_response"
+  | "json_missing"
+  | "json_parse_error";
+
+export type LlmTurnRequestResult =
+  | {
+      ok: true;
+      output: unknown;
+      model: string;
+    }
+  | {
+      ok: false;
+      attempted: boolean;
+      errorCode: LlmFailureCode;
+      errorDetail: string;
+      model?: string;
+    };
+
 const MODEL_CANDIDATES = ["openai-gpt-oss-20b", "n/a"];
 
 function readLlmSettings() {
@@ -17,11 +39,16 @@ function readLlmSettings() {
   };
 }
 
-export async function requestAgentTurnFromLlm(input: AgentTurnInput): Promise<unknown | null> {
+export async function requestAgentTurnFromLlm(input: AgentTurnInput): Promise<LlmTurnRequestResult> {
   const settings = readLlmSettings();
 
   if (!settings.baseUrl || !settings.apiKey) {
-    return null;
+    return {
+      ok: false,
+      attempted: false,
+      errorCode: "missing_config",
+      errorDetail: "LLM_BASE_URL or LLM_API_KEY is missing.",
+    };
   }
 
   const endpoint = `${settings.baseUrl.replace(/\/$/, "")}/api/v1/chat/completions`;
@@ -50,47 +77,91 @@ export async function requestAgentTurnFromLlm(input: AgentTurnInput): Promise<un
     "Return a single action for this cycle.",
   ].join("\n");
 
+  let lastFailure: Omit<Extract<LlmTurnRequestResult, { ok: false }>, "ok" | "attempted"> = {
+    errorCode: "empty_response",
+    errorDetail: "No model candidate produced valid output.",
+  };
+
   for (const model of MODEL_CANDIDATES) {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${settings.apiKey}`,
-      },
-      body: JSON.stringify({
+    let response: Response;
+
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${settings.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          stream: false,
+        }),
+        cache: "no-store",
+      });
+    } catch (error) {
+      lastFailure = {
         model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        stream: false,
-      }),
-      cache: "no-store",
-    });
+        errorCode: "network_error",
+        errorDetail: error instanceof Error ? error.message : "Unknown network error.",
+      };
+      continue;
+    }
 
     if (!response.ok) {
+      lastFailure = {
+        model,
+        errorCode: "http_error",
+        errorDetail: `HTTP ${response.status} from provider.`,
+      };
       continue;
     }
 
     const payload = await response.json();
     const text = extractAssistantText(payload);
     if (!text) {
+      lastFailure = {
+        model,
+        errorCode: "empty_response",
+        errorDetail: "Provider response had no assistant message content.",
+      };
       continue;
     }
 
     const jsonText = extractFirstJsonObject(text);
     if (!jsonText) {
+      lastFailure = {
+        model,
+        errorCode: "json_missing",
+        errorDetail: "Assistant content did not contain a JSON object.",
+      };
       continue;
     }
 
     try {
-      return JSON.parse(jsonText);
-    } catch {
+      return {
+        ok: true,
+        output: JSON.parse(jsonText),
+        model,
+      };
+    } catch (error) {
+      lastFailure = {
+        model,
+        errorCode: "json_parse_error",
+        errorDetail: error instanceof Error ? error.message : "Failed to parse JSON object.",
+      };
       continue;
     }
   }
 
-  return null;
+  return {
+    ok: false,
+    attempted: true,
+    ...lastFailure,
+  };
 }
 
 function extractAssistantText(payload: unknown): string | null {
