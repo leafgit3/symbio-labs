@@ -415,6 +415,29 @@ export default function DashboardPage() {
                     value={String(latestDiagnostics.stanceGuidanceTargetedCount ?? "-")}
                   />
                   <KeyValue label="promoted events" value={String(latestDiagnostics.promotedEventsCount)} />
+                  <KeyValue label="promotion mode" value={latestDiagnostics.eventPromotionMode ?? "-"} />
+                  <KeyValue
+                    label="promotion ambiguity"
+                    value={latestDiagnostics.eventPromotionAmbiguityScore != null ? formatPercent(latestDiagnostics.eventPromotionAmbiguityScore) : "-"}
+                  />
+                  <KeyValue
+                    label="promotion carry/signal/prev"
+                    value={
+                      latestDiagnostics.eventPromotionCarryoverCount != null &&
+                      latestDiagnostics.eventPromotionSignalCount != null &&
+                      latestDiagnostics.eventPromotionPreviousCount != null
+                        ? `${latestDiagnostics.eventPromotionCarryoverCount} / ${latestDiagnostics.eventPromotionSignalCount} / ${latestDiagnostics.eventPromotionPreviousCount}`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
+                    label="split evidence"
+                    value={latestDiagnostics.eventPromotionSplitEvidence == null ? "-" : latestDiagnostics.eventPromotionSplitEvidence ? "yes" : "no"}
+                  />
+                  <KeyValue
+                    label="promotion reasons"
+                    value={latestDiagnostics.eventPromotionReasonTags?.length ? latestDiagnostics.eventPromotionReasonTags.join(", ") : "-"}
+                  />
                   <KeyValue label="contradiction" value={formatPercent(latestDiagnostics.contradictionScore)} />
                   <KeyValue label="salience avg/std" value={`${latestDiagnostics.salienceAvg.toFixed(2)} / ${latestDiagnostics.salienceStdDev.toFixed(2)}`} />
                   <KeyValue
