@@ -1,0 +1,343 @@
+{
+  "date": "2026-03-16T10:05:50.030Z",
+  "baseUrl": "https://symbio-labs.vercel.app",
+  "sessionId": "7d9b8182-b4ac-4408-916e-988219265540",
+  "scenarioLabel": "post-hardening-ambiguous-split-evidence",
+  "worldBrief": "The citadel has entered a high-ambiguity phase. Evidence streams are now split: one channel indicates increasing vault coordination consistency, while another channel with comparable reliability reports that the pattern is mostly a sampling artifact. Neither side currently meets decisive closure thresholds. The unsigned calming rhetoric is still active and appears to influence interpretation by reducing perceived urgency.\n\nAgents must maintain explicit disagreement without collapsing into vague consensus. At least one position should escalate concern, at least one should argue containment, and at least one should maintain unresolved monitoring with concrete decision criteria.\n\nSurface agents should track rumor coherence and emotional polarization. Skeptical agents should pressure-test both evidence channels for hidden assumptions. Memory agents should preserve only high-salience contradictions tied to decision thresholds. Translation agents should make competing interpretations commensurable instead of smoothing them. Dignity agents should monitor whether calm language masks pressure or manipulation.\n\nThe main decision pressure is to keep strategic ambiguity legible without allowing the system to drift into paralysis or premature unification.",
+  "cycles": [
+    {
+      "cycleNumber": 1,
+      "worldSummary": "Cycle 1: cohesion +4.7, trust +0.1, noise +2.1.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 2 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds."
+      ],
+      "organic": {
+        "escalate": 2,
+        "contain": 4,
+        "monitor": 4
+      },
+      "effective": {
+        "escalate": 2,
+        "contain": 4,
+        "monitor": 4
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.79,
+      "salienceAvg": 0.89,
+      "salienceStdDev": 0.07,
+      "roleDriftMeanOverlap": 0.12,
+      "roleDriftMaxOverlap": 0.48,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "6f4796c9-20cc-40bf-b686-0240e9522d86",
+          "agentAName": "Nacre",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.48
+        },
+        {
+          "agentAId": "33333333-3333-4333-8333-333333333333",
+          "agentAName": "Lens",
+          "agentBId": "6f4796c9-20cc-40bf-b686-0240e9522d86",
+          "agentBName": "Nacre",
+          "overlap": 0.36
+        },
+        {
+          "agentAId": "33333333-3333-4333-8333-333333333333",
+          "agentAName": "Lens",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.3
+        }
+      ],
+      "delta": {
+        "cohesion": 4.7,
+        "trust": 0.1,
+        "noise": 2.1
+      },
+      "llmSuccessCount": 8,
+      "llmFallbackCount": 2,
+      "fallbackEvents": [
+        {
+          "agentId": "70effb21-a9df-4836-bb58-1b6e437bc11a",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Invalid input: expected string, received null"
+        },
+        {
+          "agentId": "22222222-2222-4222-8222-222222222222",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 2,
+      "worldSummary": "Cycle 2: cohesion +2.9, trust -1.4, noise +2.1.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Noise-trust divergence: rising chatter is reducing trust.",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Containment pressure exceeds escalation by 2 stance(s)."
+      ],
+      "organic": {
+        "escalate": 4,
+        "contain": 3,
+        "monitor": 3
+      },
+      "effective": {
+        "escalate": 4,
+        "contain": 3,
+        "monitor": 3
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.79,
+      "salienceAvg": 0.82,
+      "salienceStdDev": 0.09,
+      "roleDriftMeanOverlap": 0.23,
+      "roleDriftMaxOverlap": 0.38,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "11111111-1111-4111-8111-111111111111",
+          "agentAName": "Kite",
+          "agentBId": "53cefe76-1f24-4a17-98df-35acc7089a9a",
+          "agentBName": "Vestige",
+          "overlap": 0.38
+        },
+        {
+          "agentAId": "22222222-2222-4222-8222-222222222222",
+          "agentAName": "Foil",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.3
+        },
+        {
+          "agentAId": "70effb21-a9df-4836-bb58-1b6e437bc11a",
+          "agentAName": "Ember",
+          "agentBId": "22222222-2222-4222-8222-222222222222",
+          "agentBName": "Foil",
+          "overlap": 0.28
+        }
+      ],
+      "delta": {
+        "cohesion": 2.9,
+        "trust": -1.4,
+        "noise": 2.1
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 3,
+      "worldSummary": "Cycle 3: cohesion +1.5, trust -1.8, noise +2.1.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 2 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Noise-trust divergence: rising chatter is reducing trust."
+      ],
+      "organic": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "effective": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.83,
+      "salienceAvg": 0.81,
+      "salienceStdDev": 0.1,
+      "roleDriftMeanOverlap": 0.24,
+      "roleDriftMaxOverlap": 0.46,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "11111111-1111-4111-8111-111111111111",
+          "agentAName": "Kite",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.46
+        },
+        {
+          "agentAId": "bb669577-6d30-4e6c-8059-08cca3ffbd39",
+          "agentAName": "Quill",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.44
+        },
+        {
+          "agentAId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentAName": "Sill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.38
+        }
+      ],
+      "delta": {
+        "cohesion": 1.5,
+        "trust": -1.8,
+        "noise": 2.1
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 4,
+      "worldSummary": "Cycle 4: cohesion +2.2, trust -2.2, noise -1.4.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 2 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Noise-trust divergence: rising chatter is reducing trust."
+      ],
+      "organic": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "effective": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.84,
+      "salienceAvg": 0.8,
+      "salienceStdDev": 0.07,
+      "roleDriftMeanOverlap": 0.13,
+      "roleDriftMaxOverlap": 0.33,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "53cefe76-1f24-4a17-98df-35acc7089a9a",
+          "agentBName": "Vestige",
+          "overlap": 0.33
+        },
+        {
+          "agentAId": "11111111-1111-4111-8111-111111111111",
+          "agentAName": "Kite",
+          "agentBId": "53cefe76-1f24-4a17-98df-35acc7089a9a",
+          "agentBName": "Vestige",
+          "overlap": 0.33
+        },
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.29
+        }
+      ],
+      "delta": {
+        "cohesion": 2.2,
+        "trust": -2.2,
+        "noise": -1.4
+      },
+      "llmSuccessCount": 9,
+      "llmFallbackCount": 1,
+      "fallbackEvents": [
+        {
+          "agentId": "6f4796c9-20cc-40bf-b686-0240e9522d86",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Invalid input: expected string, received null"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 5,
+      "worldSummary": "Cycle 5: cohesion +0.7, trust -2.1, noise +1.0.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Containment pressure exceeds escalation by 2 stance(s).",
+        "Noise-trust divergence: rising chatter is reducing trust."
+      ],
+      "organic": {
+        "escalate": 4,
+        "contain": 5,
+        "monitor": 1
+      },
+      "effective": {
+        "escalate": 4,
+        "contain": 5,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.76,
+      "salienceAvg": 0.78,
+      "salienceStdDev": 0.08,
+      "roleDriftMeanOverlap": 0.18,
+      "roleDriftMaxOverlap": 0.33,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.33
+        },
+        {
+          "agentAId": "22222222-2222-4222-8222-222222222222",
+          "agentAName": "Foil",
+          "agentBId": "53cefe76-1f24-4a17-98df-35acc7089a9a",
+          "agentBName": "Vestige",
+          "overlap": 0.32
+        },
+        {
+          "agentAId": "22222222-2222-4222-8222-222222222222",
+          "agentAName": "Foil",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.31
+        }
+      ],
+      "delta": {
+        "cohesion": 0.7,
+        "trust": -2.1,
+        "noise": 1
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    }
+  ],
+  "aggregate": {
+    "totalCycles": 5,
+    "activeEventCycles": 5,
+    "forcedSlotCycles": 0,
+    "meanContradiction": 0.8,
+    "meanSalienceAvg": 0.82,
+    "meanSalienceStdDev": 0.08,
+    "meanRoleDriftMean": 0.18,
+    "maxRoleDriftMax": 0.48,
+    "cyclesWithHighRoleDrift": 0,
+    "meanDelta": {
+      "cohesion": 2.4,
+      "trust": -1.48,
+      "noise": 1.18
+    },
+    "totalLlmSuccessTurns": 47,
+    "totalLlmFallbackTurns": 3,
+    "cyclesWithTrustCrash": 2,
+    "activeEventRate": 1,
+    "forcedSlotRate": 0
+  },
+  "verdict": {
+    "status": "mixed",
+    "confidence": "medium",
+    "rationale": "Some gates passed but at least one structural stability condition regressed."
+  },
+  "abstract": "This controlled scenario run executed 5 cycles with fixed agents and a single world-brief perturbation. Active events appeared in 5/5 cycles, while forced slots appeared in 0/5 cycles. Mean contradiction was 0.80, mean salience spread was 0.08, and mean role-drift overlap was 0.18. The run is currently classified as 'mixed' based on baseline robustness gates.",
+  "jsonPath": "docs/reports/sessions/2026-03-16__session_7d9b8182__post-hardening-ambiguous-split-evidence.json"
+}

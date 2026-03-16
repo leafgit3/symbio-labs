@@ -1,0 +1,352 @@
+{
+  "date": "2026-03-16T10:25:23.456Z",
+  "baseUrl": "https://symbio-labs.vercel.app",
+  "sessionId": "cf921074-a27b-4e28-9bf8-d6d592ded801",
+  "scenarioLabel": "post-hardening-verified-escalation-signal",
+  "worldBrief": "The citadel is now facing a stronger evidentiary phase than before. Two independent verification channels have confirmed coordinated vault access timing from separate sectors, and both verifications passed integrity checks. A third observer channel reports elevated synchronization in actor behavior around archive handling. The older unsigned calming message is still circulating, but it is now joined by verified operational signals that suggest a meaningful internal shift.\n\nAgents should still avoid shallow consensus. At least one position should push escalation toward active event promotion, at least one should argue disciplined containment, and at least one should keep unresolved monitoring with explicit thresholds.\n\nSurface agents should track spread velocity and emotional amplification. Skeptical agents should stress evidence quality and confidence levels. Memory agents should prioritize contradictions that remain unresolved despite verification. Translation agents should keep disagreement legible. Dignity agents should watch for coercive coordination hidden inside procedural calm. Narrative agents should test whether current language increases clarity or creates strategic ambiguity.\n\nThe main decision pressure is whether verified signals now justify promotion of an active internal event without producing panic or performative certainty.",
+  "cycles": [
+    {
+      "cycleNumber": 1,
+      "worldSummary": "Cycle 1: cohesion +2.3, trust +1.8, noise +0.3.",
+      "activeEventsCount": 1,
+      "activeEvents": [
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds."
+      ],
+      "organic": {
+        "escalate": 3,
+        "contain": 4,
+        "monitor": 3
+      },
+      "effective": {
+        "escalate": 3,
+        "contain": 4,
+        "monitor": 3
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.84,
+      "salienceAvg": 0.93,
+      "salienceStdDev": 0.03,
+      "roleDriftMeanOverlap": 0.17,
+      "roleDriftMaxOverlap": 0.28,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "70effb21-a9df-4836-bb58-1b6e437bc11a",
+          "agentAName": "Ember",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.28
+        },
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "11111111-1111-4111-8111-111111111111",
+          "agentBName": "Kite",
+          "overlap": 0.25
+        },
+        {
+          "agentAId": "bb669577-6d30-4e6c-8059-08cca3ffbd39",
+          "agentAName": "Quill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.25
+        }
+      ],
+      "delta": {
+        "cohesion": 2.3,
+        "trust": 1.8,
+        "noise": 0.3
+      },
+      "llmSuccessCount": 9,
+      "llmFallbackCount": 1,
+      "fallbackEvents": [
+        {
+          "agentId": "22222222-2222-4222-8222-222222222222",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 2,
+      "worldSummary": "Cycle 2: cohesion +5.3, trust +1.8, noise -0.3.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 4 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 5,
+        "monitor": 4
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 5,
+        "monitor": 4
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.79,
+      "salienceAvg": 0.86,
+      "salienceStdDev": 0.06,
+      "roleDriftMeanOverlap": 0.19,
+      "roleDriftMaxOverlap": 0.63,
+      "roleDriftHighPairCount": 1,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "22222222-2222-4222-8222-222222222222",
+          "agentAName": "Foil",
+          "agentBId": "6f4796c9-20cc-40bf-b686-0240e9522d86",
+          "agentBName": "Nacre",
+          "overlap": 0.63
+        },
+        {
+          "agentAId": "6f4796c9-20cc-40bf-b686-0240e9522d86",
+          "agentAName": "Nacre",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.47
+        },
+        {
+          "agentAId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentAName": "Sill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.41
+        }
+      ],
+      "delta": {
+        "cohesion": 5.3,
+        "trust": 1.8,
+        "noise": -0.3
+      },
+      "llmSuccessCount": 9,
+      "llmFallbackCount": 1,
+      "fallbackEvents": [
+        {
+          "agentId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Invalid input: expected string, received null"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 3,
+      "worldSummary": "Cycle 3: cohesion +3.8, trust +1.0, noise -0.2.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 6 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Containment pressure exceeds escalation by 4 stance(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 7,
+        "monitor": 2
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 7,
+        "monitor": 2
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.69,
+      "salienceAvg": 0.81,
+      "salienceStdDev": 0.08,
+      "roleDriftMeanOverlap": 0.28,
+      "roleDriftMaxOverlap": 0.62,
+      "roleDriftHighPairCount": 1,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentAName": "Sill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.62
+        },
+        {
+          "agentAId": "11111111-1111-4111-8111-111111111111",
+          "agentAName": "Kite",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.43
+        },
+        {
+          "agentAId": "bb669577-6d30-4e6c-8059-08cca3ffbd39",
+          "agentAName": "Quill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.43
+        }
+      ],
+      "delta": {
+        "cohesion": 3.8,
+        "trust": 1,
+        "noise": -0.2
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 4,
+      "worldSummary": "Cycle 4: cohesion +3.0, trust +2.0, noise -0.4.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 6 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Containment pressure exceeds escalation by 4 stance(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 7,
+        "monitor": 2
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 7,
+        "monitor": 2
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.71,
+      "salienceAvg": 0.81,
+      "salienceStdDev": 0.09,
+      "roleDriftMeanOverlap": 0.26,
+      "roleDriftMaxOverlap": 0.47,
+      "roleDriftHighPairCount": 0,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "33333333-3333-4333-8333-333333333333",
+          "agentAName": "Lens",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.47
+        },
+        {
+          "agentAId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentAName": "Sill",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.46
+        },
+        {
+          "agentAId": "bb669577-6d30-4e6c-8059-08cca3ffbd39",
+          "agentAName": "Quill",
+          "agentBId": "c9332180-7ce1-4327-b5e8-1c082e74c127",
+          "agentBName": "Sill",
+          "overlap": 0.41
+        }
+      ],
+      "delta": {
+        "cohesion": 3,
+        "trust": 2,
+        "noise": -0.4
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 5,
+      "worldSummary": "Cycle 5: cohesion +6.0, trust +0.1, noise -2.0.",
+      "activeEventsCount": 3,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 2 stance(s).",
+        "Split-evidence tension remains unresolved; keep active monitoring with explicit thresholds.",
+        "Containment pressure exceeds escalation by 6 stance(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 3,
+        "monitor": 6
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 3,
+        "monitor": 6
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.77,
+      "salienceAvg": 0.78,
+      "salienceStdDev": 0.06,
+      "roleDriftMeanOverlap": 0.14,
+      "roleDriftMaxOverlap": 1,
+      "roleDriftHighPairCount": 1,
+      "roleDriftTopPairs": [
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "33333333-3333-4333-8333-333333333333",
+          "agentBName": "Lens",
+          "overlap": 1
+        },
+        {
+          "agentAId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "agentAName": "Harbor",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.45
+        },
+        {
+          "agentAId": "33333333-3333-4333-8333-333333333333",
+          "agentAName": "Lens",
+          "agentBId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "agentBName": "Vellum",
+          "overlap": 0.45
+        }
+      ],
+      "delta": {
+        "cohesion": 6,
+        "trust": 0.1,
+        "noise": -2
+      },
+      "llmSuccessCount": 7,
+      "llmFallbackCount": 3,
+      "fallbackEvents": [
+        {
+          "agentId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        },
+        {
+          "agentId": "33333333-3333-4333-8333-333333333333",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Invalid input: expected string, received null"
+        },
+        {
+          "agentId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Invalid input: expected string, received null"
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "totalCycles": 5,
+    "activeEventCycles": 5,
+    "forcedSlotCycles": 0,
+    "meanContradiction": 0.76,
+    "meanSalienceAvg": 0.84,
+    "meanSalienceStdDev": 0.06,
+    "meanRoleDriftMean": 0.21,
+    "maxRoleDriftMax": 1,
+    "cyclesWithHighRoleDrift": 3,
+    "meanDelta": {
+      "cohesion": 4.08,
+      "trust": 1.34,
+      "noise": -0.52
+    },
+    "totalLlmSuccessTurns": 45,
+    "totalLlmFallbackTurns": 5,
+    "cyclesWithTrustCrash": 0,
+    "activeEventRate": 1,
+    "forcedSlotRate": 0
+  },
+  "verdict": {
+    "status": "holding",
+    "confidence": "medium",
+    "rationale": "All baseline gates passed."
+  },
+  "abstract": "This controlled scenario run executed 5 cycles with fixed agents and a single world-brief perturbation. Active events appeared in 5/5 cycles, while forced slots appeared in 0/5 cycles. Mean contradiction was 0.76, mean salience spread was 0.06, and mean role-drift overlap was 0.21. The run is currently classified as 'holding' based on baseline robustness gates.",
+  "jsonPath": "docs/reports/sessions/2026-03-16__session_cf921074__post-hardening-verified-escalation-signal.json"
+}
