@@ -6,6 +6,7 @@ export type AgentTurnInput = {
   worldSummary: string;
   recentFeed: string[];
   recentMemories: string[];
+  stanceGuidance?: string;
 };
 
 export type LlmFailureCode =
@@ -99,6 +100,7 @@ export async function requestAgentTurnFromLlm(input: AgentTurnInput): Promise<Ll
     `World summary: ${input.worldSummary}`,
     `Recent feed: ${input.recentFeed.join(" | ") || "none"}`,
     `Recent memories: ${input.recentMemories.join(" | ") || "none"}`,
+    ...(input.stanceGuidance ? [`Stance guidance: ${input.stanceGuidance}`] : []),
     "Return a single action for this cycle.",
   ].join("\n");
 

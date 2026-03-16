@@ -59,6 +59,7 @@ export type AgentTurnContext = {
   worldSummary: string;
   recentFeed: string[];
   recentMemories: string[];
+  stanceGuidance?: string;
 };
 
 export type AgentTurnTelemetry = {
@@ -244,6 +245,7 @@ export async function runAgentTurn(agent: Agent, context: AgentTurnContext): Pro
     worldSummary: context.worldSummary,
     recentFeed: context.recentFeed,
     recentMemories: context.recentMemories,
+    stanceGuidance: context.stanceGuidance,
   });
 
   if (!llmResult.ok) {

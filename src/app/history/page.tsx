@@ -175,6 +175,14 @@ export default function HistoryPage() {
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
                       <KeyValue label="forced slots" value={String(detailsQuery.data.runSummary.diagnostics.forcedSlotsCount)} />
+                      <KeyValue
+                        label="stance guidance (soft)"
+                        value={String(detailsQuery.data.runSummary.diagnostics.stanceGuidanceSoftCount ?? "-")}
+                      />
+                      <KeyValue
+                        label="stance guidance (targeted)"
+                        value={String(detailsQuery.data.runSummary.diagnostics.stanceGuidanceTargetedCount ?? "-")}
+                      />
                       <KeyValue label="promoted events" value={String(detailsQuery.data.runSummary.diagnostics.promotedEventsCount)} />
                       <KeyValue label="contradiction" value={formatPercent(detailsQuery.data.runSummary.diagnostics.contradictionScore)} />
                       <KeyValue

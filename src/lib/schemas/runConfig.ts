@@ -59,6 +59,8 @@ export const RunSummarySchema = z.object({
       llmSuccessCount: z.number().int().nonnegative().optional(),
       llmSchemaRepairCount: z.number().int().nonnegative().optional(),
       llmFallbackReasonCounts: z.record(z.string(), z.number().int().nonnegative()).optional(),
+      stanceGuidanceSoftCount: z.number().int().nonnegative().optional(),
+      stanceGuidanceTargetedCount: z.number().int().nonnegative().optional(),
     })
     .optional(),
 });

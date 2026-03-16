@@ -65,7 +65,7 @@ Primary app URL: `http://localhost:3000/dashboard`
   - salience now reacts to novelty/contradiction/mismatch signals
 - Diagnostics surface:
   - per-cycle diagnostics persisted in `cycle_run_summaries.diagnostics`
-  - Dashboard + History show stance counts, forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts
+  - Dashboard + History show stance counts, stance guidance counts (`soft` / `targeted`), forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts
 - LLM runtime observability:
   - each `agent_action` event now includes `outputSource`, `llmAttempted`, `llmModel`, and LLM error metadata when fallback is used
   - fallback/error transitions are recorded as `minor_event_created` with payload `kind: "llm_fallback"`

@@ -409,6 +409,11 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.45rem" }}>
                   <KeyValue label="forced slots" value={String(latestDiagnostics.forcedSlotsCount)} />
+                  <KeyValue label="stance guidance (soft)" value={String(latestDiagnostics.stanceGuidanceSoftCount ?? "-")} />
+                  <KeyValue
+                    label="stance guidance (targeted)"
+                    value={String(latestDiagnostics.stanceGuidanceTargetedCount ?? "-")}
+                  />
                   <KeyValue label="promoted events" value={String(latestDiagnostics.promotedEventsCount)} />
                   <KeyValue label="contradiction" value={formatPercent(latestDiagnostics.contradictionScore)} />
                   <KeyValue label="salience avg/std" value={`${latestDiagnostics.salienceAvg.toFixed(2)} / ${latestDiagnostics.salienceStdDev.toFixed(2)}`} />
