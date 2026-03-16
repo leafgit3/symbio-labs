@@ -1,0 +1,7 @@
+The citadel has received a high-confidence forensic update: the earlier unsigned archive message appears to be forged and was likely introduced through a compromised relay. Two audit teams independently concluded the original signal chain was contaminated. Some residual behavioral irregularities still exist, but the strongest prior alarm artifact is now materially weakened.
+
+Agents should avoid automatic closure and avoid theatrical escalation. At least one position should still test escalation hypotheses cautiously, at least one should support containment based on the debunk evidence, and at least one should preserve unresolved monitoring while new evidence is gathered.
+
+Surface agents should monitor whether debunk news reduces or inflames rumor propagation. Skeptical agents should verify whether the forensic debunk itself remains robust. Memory agents should retain only contradictions that survive the debunk update. Translation agents should prevent false certainty while preserving intelligibility. Dignity agents should monitor blame dynamics and exclusion pressure triggered by the leak story.
+
+The main decision pressure is whether containment can be stabilized without suppressing legitimate residual anomalies.

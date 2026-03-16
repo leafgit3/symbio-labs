@@ -58,6 +58,12 @@ Use these as first-class report signals:
   per-scenario execution notes (block format)
 - `templates/session_robustness_report.json`:
   machine-readable metrics appendix
+- `world_briefs/*.txt`:
+  reusable scenario briefs for controlled runs
+- `../../scripts/reports/run-controlled-scenario.mjs`:
+  API runner that executes a scenario cycle-by-cycle and writes JSON + narrative report files
+- `02_runbook_cycle_by_cycle.md`:
+  copy-paste commands for running the initial scenario set one by one
 
 ## Suggested Session Naming
 
@@ -80,3 +86,13 @@ A session is "structurally stable" only if all are true:
 - Organic/effective stance gap remains auditable and explicit
 
 These thresholds are operational defaults, not hard science. Adjust when benchmark data matures.
+
+## Automated Run Example
+
+```bash
+node scripts/reports/run-controlled-scenario.mjs \
+  --label control_baseline_replay \
+  --brief-file docs/reports/world_briefs/control_baseline_replay.txt \
+  --cycles 5 \
+  --pause-ms 1500
+```

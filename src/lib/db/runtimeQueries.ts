@@ -62,6 +62,29 @@ export function hasSupabaseRuntime(): boolean {
   return Boolean(getSupabaseServiceClient());
 }
 
+export async function getSimulationContextInfo(): Promise<{
+  sessionId: string;
+  worldBrief: string;
+  mode: "supabase" | "memory";
+}> {
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    const store = readStore();
+    return {
+      sessionId: "in-memory",
+      worldBrief: store.simulationConfig.worldBrief,
+      mode: "memory",
+    };
+  }
+
+  const context = await getOrCreateSimulationContext();
+  return {
+    sessionId: context.sessionId,
+    worldBrief: context.worldBrief,
+    mode: "supabase",
+  };
+}
+
 export async function getWorldStateCurrent(): Promise<WorldState> {
   const supabase = getSupabaseServiceClient();
   if (!supabase) {

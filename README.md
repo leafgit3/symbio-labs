@@ -113,6 +113,7 @@ Core:
 - `GET /api/cycles/latest`
 - `POST /api/cycle/run`
 - `POST /api/simulation/reset`
+- `GET /api/simulation/context`
 
 Scenario/history:
 - `GET /api/config/world-brief`

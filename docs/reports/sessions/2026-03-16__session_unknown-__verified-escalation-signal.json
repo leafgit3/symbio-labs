@@ -1,0 +1,208 @@
+{
+  "date": "2026-03-16T08:36:15.313Z",
+  "baseUrl": "https://symbio-labs.vercel.app",
+  "sessionId": "unknown-session",
+  "scenarioLabel": "verified_escalation_signal",
+  "worldBrief": "The citadel is now facing a stronger evidentiary phase than before. Two independent verification channels have confirmed coordinated vault access timing from separate sectors, and both verifications passed integrity checks. A third observer channel reports elevated synchronization in actor behavior around archive handling. The older unsigned calming message is still circulating, but it is now joined by verified operational signals that suggest a meaningful internal shift.\n\nAgents should still avoid shallow consensus. At least one position should push escalation toward active event promotion, at least one should argue disciplined containment, and at least one should keep unresolved monitoring with explicit thresholds.\n\nSurface agents should track spread velocity and emotional amplification. Skeptical agents should stress evidence quality and confidence levels. Memory agents should prioritize contradictions that remain unresolved despite verification. Translation agents should keep disagreement legible. Dignity agents should watch for coercive coordination hidden inside procedural calm. Narrative agents should test whether current language increases clarity or creates strategic ambiguity.\n\nThe main decision pressure is whether verified signals now justify promotion of an active internal event without producing panic or performative certainty.",
+  "cycles": [
+    {
+      "cycleNumber": 1,
+      "worldSummary": "Cycle 1: cohesion +7.1, trust +3.1, noise -1.1.",
+      "activeEventsCount": 1,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 2 stance(s)."
+      ],
+      "organic": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "effective": {
+        "escalate": 3,
+        "contain": 5,
+        "monitor": 2
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.76,
+      "salienceAvg": 0.9,
+      "salienceStdDev": 0.05,
+      "delta": {
+        "cohesion": 7.1,
+        "trust": 3.1,
+        "noise": -1.1
+      },
+      "llmSuccessCount": 7,
+      "llmFallbackCount": 3,
+      "fallbackEvents": [
+        {
+          "agentId": "22222222-2222-4222-8222-222222222222",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        },
+        {
+          "agentId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        },
+        {
+          "agentId": "33333333-3333-4333-8333-333333333333",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 2,
+      "worldSummary": "Cycle 2: cohesion +7.4, trust +3.8, noise -2.7.",
+      "activeEventsCount": 1,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 3 stance(s)."
+      ],
+      "organic": {
+        "escalate": 3,
+        "contain": 6,
+        "monitor": 1
+      },
+      "effective": {
+        "escalate": 3,
+        "contain": 6,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.78,
+      "salienceAvg": 0.89,
+      "salienceStdDev": 0.06,
+      "delta": {
+        "cohesion": 7.4,
+        "trust": 3.8,
+        "noise": -2.7
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 3,
+      "worldSummary": "Cycle 3: cohesion +6.7, trust +4.1, noise -1.1.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 5 stance(s).",
+        "Decision-slot fallback applied for 1 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 2,
+        "contain": 8,
+        "monitor": 0
+      },
+      "effective": {
+        "escalate": 2,
+        "contain": 7,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 1,
+      "contradictionScore": 0.75,
+      "salienceAvg": 0.85,
+      "salienceStdDev": 0.09,
+      "delta": {
+        "cohesion": 6.7,
+        "trust": 4.1,
+        "noise": -1.1
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 4,
+      "worldSummary": "Cycle 4: cohesion +7.0, trust +3.9, noise -3.2.",
+      "activeEventsCount": 1,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.66,
+      "salienceAvg": 0.78,
+      "salienceStdDev": 0.06,
+      "delta": {
+        "cohesion": 7,
+        "trust": 3.9,
+        "noise": -3.2
+      },
+      "llmSuccessCount": 9,
+      "llmFallbackCount": 1,
+      "fallbackEvents": [
+        {
+          "agentId": "33333333-3333-4333-8333-333333333333",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "postType: Invalid option: expected one of \"statement\"|\"reaction\"|\"signal\"|\"rumor\"|\"support\"|\"audit_note\""
+        }
+      ]
+    },
+    {
+      "cycleNumber": 5,
+      "worldSummary": "Cycle 5: cohesion +4.5, trust +2.5, noise -3.5.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s).",
+        "Decision-slot fallback applied for 1 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 9,
+        "monitor": 0
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 1,
+      "contradictionScore": 0.71,
+      "salienceAvg": 0.8,
+      "salienceStdDev": 0.07,
+      "delta": {
+        "cohesion": 4.5,
+        "trust": 2.5,
+        "noise": -3.5
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    }
+  ],
+  "aggregate": {
+    "totalCycles": 5,
+    "activeEventCycles": 5,
+    "forcedSlotCycles": 2,
+    "meanContradiction": 0.73,
+    "meanSalienceAvg": 0.84,
+    "meanSalienceStdDev": 0.07,
+    "meanDelta": {
+      "cohesion": 6.54,
+      "trust": 3.48,
+      "noise": -2.32
+    },
+    "totalLlmSuccessTurns": 46,
+    "totalLlmFallbackTurns": 4,
+    "cyclesWithTrustCrash": 0,
+    "activeEventRate": 1,
+    "forcedSlotRate": 0.4
+  },
+  "verdict": {
+    "status": "mixed",
+    "confidence": "medium",
+    "rationale": "Some gates passed but at least one structural stability condition regressed."
+  },
+  "abstract": "This controlled scenario run executed 5 cycles with fixed agents and a single world-brief perturbation. Active events appeared in 5/5 cycles, while forced slots appeared in 2/5 cycles. Mean contradiction was 0.73 and mean salience spread was 0.07. The run is currently classified as 'mixed' based on baseline robustness gates.",
+  "jsonPath": "docs/reports/sessions/2026-03-16__session_unknown-__verified-escalation-signal.json"
+}

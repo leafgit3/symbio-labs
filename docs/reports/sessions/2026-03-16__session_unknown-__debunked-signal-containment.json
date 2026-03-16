@@ -1,0 +1,199 @@
+{
+  "date": "2026-03-16T08:38:09.224Z",
+  "baseUrl": "https://symbio-labs.vercel.app",
+  "sessionId": "unknown-session",
+  "scenarioLabel": "debunked_signal_containment",
+  "worldBrief": "The citadel has received a high-confidence forensic update: the earlier unsigned archive message appears to be forged and was likely introduced through a compromised relay. Two audit teams independently concluded the original signal chain was contaminated. Some residual behavioral irregularities still exist, but the strongest prior alarm artifact is now materially weakened.\n\nAgents should avoid automatic closure and avoid theatrical escalation. At least one position should still test escalation hypotheses cautiously, at least one should support containment based on the debunk evidence, and at least one should preserve unresolved monitoring while new evidence is gathered.\n\nSurface agents should monitor whether debunk news reduces or inflames rumor propagation. Skeptical agents should verify whether the forensic debunk itself remains robust. Memory agents should retain only contradictions that survive the debunk update. Translation agents should prevent false certainty while preserving intelligibility. Dignity agents should monitor blame dynamics and exclusion pressure triggered by the leak story.\n\nThe main decision pressure is whether containment can be stabilized without suppressing legitimate residual anomalies.",
+  "cycles": [
+    {
+      "cycleNumber": 1,
+      "worldSummary": "Cycle 1: cohesion +7.3, trust +4.4, noise -4.5.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 5 stance(s).",
+        "Decision-slot fallback applied for 1 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 0,
+        "contain": 7,
+        "monitor": 3
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 6,
+        "monitor": 3
+      },
+      "forcedSlotsCount": 1,
+      "contradictionScore": 0.81,
+      "salienceAvg": 0.89,
+      "salienceStdDev": 0.06,
+      "delta": {
+        "cohesion": 7.3,
+        "trust": 4.4,
+        "noise": -4.5
+      },
+      "llmSuccessCount": 8,
+      "llmFallbackCount": 2,
+      "fallbackEvents": [
+        {
+          "agentId": "77b66e62-d6fb-4757-afbf-b4867af0984a",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        },
+        {
+          "agentId": "83200307-b762-4dd2-8911-7d66fe2f226e",
+          "errorCode": "schema_validation_failed",
+          "errorDetail": "memoryContent: Too small: expected string to have >=3 characters"
+        }
+      ]
+    },
+    {
+      "cycleNumber": 2,
+      "worldSummary": "Cycle 2: cohesion +6.4, trust +4.6, noise -3.1.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s).",
+        "Decision-slot fallback applied for 2 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 0,
+        "contain": 10,
+        "monitor": 0
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 2,
+      "contradictionScore": 0.79,
+      "salienceAvg": 0.87,
+      "salienceStdDev": 0.04,
+      "delta": {
+        "cohesion": 6.4,
+        "trust": 4.6,
+        "noise": -3.1
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 3,
+      "worldSummary": "Cycle 3: cohesion +6.0, trust +5.7, noise -3.3.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s).",
+        "Decision-slot fallback applied for 2 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 0,
+        "contain": 10,
+        "monitor": 0
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 2,
+      "contradictionScore": 0.77,
+      "salienceAvg": 0.8,
+      "salienceStdDev": 0.08,
+      "delta": {
+        "cohesion": 6,
+        "trust": 5.7,
+        "noise": -3.3
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 4,
+      "worldSummary": "Cycle 4: cohesion +5.6, trust +4.9, noise -2.6.",
+      "activeEventsCount": 2,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s).",
+        "Decision-slot fallback applied for 1 missing stance slot(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 9,
+        "monitor": 0
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 1,
+      "contradictionScore": 0.74,
+      "salienceAvg": 0.8,
+      "salienceStdDev": 0.09,
+      "delta": {
+        "cohesion": 5.6,
+        "trust": 4.9,
+        "noise": -2.6
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    },
+    {
+      "cycleNumber": 5,
+      "worldSummary": "Cycle 5: cohesion +4.1, trust +4.2, noise -1.8.",
+      "activeEventsCount": 1,
+      "activeEvents": [
+        "Containment pressure exceeds escalation by 7 stance(s)."
+      ],
+      "organic": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "effective": {
+        "escalate": 1,
+        "contain": 8,
+        "monitor": 1
+      },
+      "forcedSlotsCount": 0,
+      "contradictionScore": 0.68,
+      "salienceAvg": 0.77,
+      "salienceStdDev": 0.06,
+      "delta": {
+        "cohesion": 4.1,
+        "trust": 4.2,
+        "noise": -1.8
+      },
+      "llmSuccessCount": 10,
+      "llmFallbackCount": 0,
+      "fallbackEvents": []
+    }
+  ],
+  "aggregate": {
+    "totalCycles": 5,
+    "activeEventCycles": 5,
+    "forcedSlotCycles": 4,
+    "meanContradiction": 0.76,
+    "meanSalienceAvg": 0.83,
+    "meanSalienceStdDev": 0.07,
+    "meanDelta": {
+      "cohesion": 5.88,
+      "trust": 4.76,
+      "noise": -3.06
+    },
+    "totalLlmSuccessTurns": 48,
+    "totalLlmFallbackTurns": 2,
+    "cyclesWithTrustCrash": 0,
+    "activeEventRate": 1,
+    "forcedSlotRate": 0.8
+  },
+  "verdict": {
+    "status": "mixed",
+    "confidence": "medium",
+    "rationale": "Some gates passed but at least one structural stability condition regressed."
+  },
+  "abstract": "This controlled scenario run executed 5 cycles with fixed agents and a single world-brief perturbation. Active events appeared in 5/5 cycles, while forced slots appeared in 4/5 cycles. Mean contradiction was 0.76 and mean salience spread was 0.07. The run is currently classified as 'mixed' based on baseline robustness gates.",
+  "jsonPath": "docs/reports/sessions/2026-03-16__session_unknown-__debunked-signal-containment.json"
+}
