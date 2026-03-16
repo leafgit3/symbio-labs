@@ -435,6 +435,36 @@ export default function DashboardPage() {
                     value={latestDiagnostics.eventPromotionSplitEvidence == null ? "-" : latestDiagnostics.eventPromotionSplitEvidence ? "yes" : "no"}
                   />
                   <KeyValue
+                    label="envelope applied"
+                    value={latestDiagnostics.envelopeApplied == null ? "-" : latestDiagnostics.envelopeApplied ? "yes" : "no"}
+                  />
+                  <KeyValue
+                    label="trust delta raw->adj"
+                    value={
+                      latestDiagnostics.trustDeltaRaw != null && latestDiagnostics.trustDeltaAdjusted != null
+                        ? `${formatDelta(latestDiagnostics.trustDeltaRaw)} -> ${formatDelta(latestDiagnostics.trustDeltaAdjusted)}`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
+                    label="noise delta raw->adj"
+                    value={
+                      latestDiagnostics.noiseDeltaRaw != null && latestDiagnostics.noiseDeltaAdjusted != null
+                        ? `${formatDelta(latestDiagnostics.noiseDeltaRaw)} -> ${formatDelta(latestDiagnostics.noiseDeltaAdjusted)}`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
+                    label="envelope factor/clamps"
+                    value={
+                      latestDiagnostics.envelopeDampingFactor != null &&
+                      latestDiagnostics.trustDeltaClamp != null &&
+                      latestDiagnostics.noiseDeltaClamp != null
+                        ? `${latestDiagnostics.envelopeDampingFactor.toFixed(2)} / ${latestDiagnostics.trustDeltaClamp.toFixed(2)} / ${latestDiagnostics.noiseDeltaClamp.toFixed(2)}`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
                     label="promotion reasons"
                     value={latestDiagnostics.eventPromotionReasonTags?.length ? latestDiagnostics.eventPromotionReasonTags.join(", ") : "-"}
                   />

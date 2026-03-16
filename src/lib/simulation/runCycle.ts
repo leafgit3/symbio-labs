@@ -64,6 +64,12 @@ type ExecutedTurn = {
   telemetry: AgentTurnTelemetry;
 };
 
+type AggregateDelta = {
+  cohesion: number;
+  trust: number;
+  noise: number;
+};
+
 type StanceGuidance = {
   mode: "none" | "soft" | "targeted";
   target?: DecisionStance;
@@ -156,6 +162,72 @@ function stdDev(values: number[], mean: number): number {
 
   const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
   return Math.sqrt(variance);
+}
+
+function clampDelta(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function applyTrustNoiseEnvelope(args: {
+  rawDelta: AggregateDelta;
+  previousWorld: WorldState;
+  cycleNumber: number;
+}): {
+  adjustedDelta: AggregateDelta;
+  diagnostics: {
+    envelopeApplied: boolean;
+    trustDeltaRaw: number;
+    trustDeltaAdjusted: number;
+    noiseDeltaRaw: number;
+    noiseDeltaAdjusted: number;
+    trustClamp: number;
+    noiseClamp: number;
+    dampingFactor: number;
+  };
+} {
+  const stageFactor = args.cycleNumber <= 2 ? 0.65 : args.cycleNumber <= 5 ? 0.8 : 1;
+  const trustClamp = round2(2.8 * stageFactor);
+  const noiseClamp = round2(3.2 * stageFactor);
+
+  const trustRaw = round2(args.rawDelta.trust);
+  const noiseRaw = round2(args.rawDelta.noise);
+
+  let trustAdjusted = clampDelta(trustRaw, -trustClamp, trustClamp);
+  let noiseAdjusted = clampDelta(noiseRaw, -noiseClamp, noiseClamp);
+  let dampingFactor = 1;
+
+  if (noiseAdjusted > 1.5 && trustAdjusted < -1) {
+    const pressure = clampDelta((noiseAdjusted - 1.5) / 2.5, 0, 1);
+    const damp = round2(0.15 + pressure * 0.25);
+    trustAdjusted = trustAdjusted * (1 - damp);
+    dampingFactor = round2(dampingFactor - damp);
+  }
+
+  if (args.previousWorld.trust <= 25 && trustAdjusted < 0) {
+    trustAdjusted = trustAdjusted * 0.75;
+    dampingFactor = round2(dampingFactor * 0.75);
+  }
+
+  trustAdjusted = round1(trustAdjusted);
+  noiseAdjusted = round1(noiseAdjusted);
+
+  return {
+    adjustedDelta: {
+      cohesion: args.rawDelta.cohesion,
+      trust: trustAdjusted,
+      noise: noiseAdjusted,
+    },
+    diagnostics: {
+      envelopeApplied: trustAdjusted !== round1(trustRaw) || noiseAdjusted !== round1(noiseRaw),
+      trustDeltaRaw: round1(trustRaw),
+      trustDeltaAdjusted: trustAdjusted,
+      noiseDeltaRaw: round1(noiseRaw),
+      noiseDeltaAdjusted: noiseAdjusted,
+      trustClamp,
+      noiseClamp,
+      dampingFactor,
+    },
+  };
 }
 
 function emptyStanceCounts(): StanceCounts {
@@ -587,6 +659,12 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     effectiveStanceCounts: decisionSlots.effectiveCounts,
     forcedSlotsCount: decisionSlots.forcedSlots.length,
   });
+  const envelope = applyTrustNoiseEnvelope({
+    rawDelta: delta,
+    previousWorld,
+    cycleNumber,
+  });
+  const adjustedDelta = envelope.adjustedDelta;
   const promotion = buildPromotedEvents({
     delta,
     stanceCounts: decisionSlots.effectiveCounts,
@@ -601,8 +679,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   const worldState = buildWorldStateUpdate({
     cycleNumber,
     prev: previousWorld,
-    delta,
-    summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
+    delta: adjustedDelta,
+    summary: `Cycle ${cycleNumber}: cohesion ${adjustedDelta.cohesion >= 0 ? "+" : ""}${adjustedDelta.cohesion.toFixed(1)}, trust ${adjustedDelta.trust >= 0 ? "+" : ""}${adjustedDelta.trust.toFixed(1)}, noise ${adjustedDelta.noise >= 0 ? "+" : ""}${adjustedDelta.noise.toFixed(1)}.`,
     activeEvents: promotion.events,
   });
 
@@ -638,6 +716,14 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
       eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
       eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+      envelopeApplied: envelope.diagnostics.envelopeApplied,
+      trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
+      trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
+      noiseDeltaRaw: envelope.diagnostics.noiseDeltaRaw,
+      noiseDeltaAdjusted: envelope.diagnostics.noiseDeltaAdjusted,
+      envelopeDampingFactor: envelope.diagnostics.dampingFactor,
+      trustDeltaClamp: envelope.diagnostics.trustClamp,
+      noiseDeltaClamp: envelope.diagnostics.noiseClamp,
       organicStanceCounts: decisionSlots.organicCounts,
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
@@ -662,9 +748,9 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     worldBriefUsed,
     postsCreated,
     delta: {
-      cohesion: round1(delta.cohesion),
-      trust: round1(delta.trust),
-      noise: round1(delta.noise),
+      cohesion: round1(adjustedDelta.cohesion),
+      trust: round1(adjustedDelta.trust),
+      noise: round1(adjustedDelta.noise),
     },
     agentsUsed: decisionSlots.records.map((record) => ({
       id: record.agent.id,
@@ -691,6 +777,14 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
       eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
       eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+      envelopeApplied: envelope.diagnostics.envelopeApplied,
+      trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
+      trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
+      noiseDeltaRaw: envelope.diagnostics.noiseDeltaRaw,
+      noiseDeltaAdjusted: envelope.diagnostics.noiseDeltaAdjusted,
+      envelopeDampingFactor: envelope.diagnostics.dampingFactor,
+      trustDeltaClamp: envelope.diagnostics.trustClamp,
+      noiseDeltaClamp: envelope.diagnostics.noiseClamp,
       contradictionScore,
       salienceAvg,
       salienceStdDev,
@@ -1004,6 +1098,12 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
     });
+    const envelope = applyTrustNoiseEnvelope({
+      rawDelta: delta,
+      previousWorld,
+      cycleNumber,
+    });
+    const adjustedDelta = envelope.adjustedDelta;
     const promotion = buildPromotedEvents({
       delta,
       stanceCounts: decisionSlots.effectiveCounts,
@@ -1018,8 +1118,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
     const worldState = buildWorldStateUpdate({
       cycleNumber,
       prev: previousWorld,
-      delta,
-      summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
+      delta: adjustedDelta,
+      summary: `Cycle ${cycleNumber}: cohesion ${adjustedDelta.cohesion >= 0 ? "+" : ""}${adjustedDelta.cohesion.toFixed(1)}, trust ${adjustedDelta.trust >= 0 ? "+" : ""}${adjustedDelta.trust.toFixed(1)}, noise ${adjustedDelta.noise >= 0 ? "+" : ""}${adjustedDelta.noise.toFixed(1)}.`,
       activeEvents: promotion.events,
     });
 
@@ -1042,6 +1142,14 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
           eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
           eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+          envelopeApplied: envelope.diagnostics.envelopeApplied,
+          trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
+          trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
+          noiseDeltaRaw: envelope.diagnostics.noiseDeltaRaw,
+          noiseDeltaAdjusted: envelope.diagnostics.noiseDeltaAdjusted,
+          envelopeDampingFactor: envelope.diagnostics.dampingFactor,
+          trustDeltaClamp: envelope.diagnostics.trustClamp,
+          noiseDeltaClamp: envelope.diagnostics.noiseClamp,
           organicStanceCounts: decisionSlots.organicCounts,
           effectiveStanceCounts: decisionSlots.effectiveCounts,
           forcedSlotsCount: decisionSlots.forcedSlots.length,
@@ -1068,9 +1176,9 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       worldBriefUsed,
       postsCreated,
       delta: {
-        cohesion: round1(delta.cohesion),
-        trust: round1(delta.trust),
-        noise: round1(delta.noise),
+        cohesion: round1(adjustedDelta.cohesion),
+        trust: round1(adjustedDelta.trust),
+        noise: round1(adjustedDelta.noise),
       },
       agentsUsed: decisionSlots.records.map((record) => ({
         id: record.agent.id,
@@ -1097,6 +1205,14 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
         eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
         eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+        envelopeApplied: envelope.diagnostics.envelopeApplied,
+        trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
+        trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
+        noiseDeltaRaw: envelope.diagnostics.noiseDeltaRaw,
+        noiseDeltaAdjusted: envelope.diagnostics.noiseDeltaAdjusted,
+        envelopeDampingFactor: envelope.diagnostics.dampingFactor,
+        trustDeltaClamp: envelope.diagnostics.trustClamp,
+        noiseDeltaClamp: envelope.diagnostics.noiseClamp,
         contradictionScore,
         salienceAvg,
         salienceStdDev,

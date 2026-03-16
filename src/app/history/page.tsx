@@ -214,6 +214,44 @@ export default function HistoryPage() {
                         }
                       />
                       <KeyValue
+                        label="envelope applied"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.envelopeApplied == null
+                            ? "-"
+                            : detailsQuery.data.runSummary.diagnostics.envelopeApplied
+                              ? "yes"
+                              : "no"
+                        }
+                      />
+                      <KeyValue
+                        label="trust delta raw->adj"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.trustDeltaRaw != null &&
+                          detailsQuery.data.runSummary.diagnostics.trustDeltaAdjusted != null
+                            ? `${formatDelta(detailsQuery.data.runSummary.diagnostics.trustDeltaRaw)} -> ${formatDelta(detailsQuery.data.runSummary.diagnostics.trustDeltaAdjusted)}`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="noise delta raw->adj"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.noiseDeltaRaw != null &&
+                          detailsQuery.data.runSummary.diagnostics.noiseDeltaAdjusted != null
+                            ? `${formatDelta(detailsQuery.data.runSummary.diagnostics.noiseDeltaRaw)} -> ${formatDelta(detailsQuery.data.runSummary.diagnostics.noiseDeltaAdjusted)}`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="envelope factor/clamps"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.envelopeDampingFactor != null &&
+                          detailsQuery.data.runSummary.diagnostics.trustDeltaClamp != null &&
+                          detailsQuery.data.runSummary.diagnostics.noiseDeltaClamp != null
+                            ? `${detailsQuery.data.runSummary.diagnostics.envelopeDampingFactor.toFixed(2)} / ${detailsQuery.data.runSummary.diagnostics.trustDeltaClamp.toFixed(2)} / ${detailsQuery.data.runSummary.diagnostics.noiseDeltaClamp.toFixed(2)}`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
                         label="promotion reasons"
                         value={
                           detailsQuery.data.runSummary.diagnostics.eventPromotionReasonTags?.length
