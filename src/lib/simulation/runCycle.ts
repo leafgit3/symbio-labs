@@ -582,16 +582,18 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     });
   }
 
-  const promotedEvents = buildPromotedEvents({
-    delta,
-    stanceCounts: decisionSlots.effectiveCounts,
-    forcedSlotsCount: decisionSlots.forcedSlots.length,
-    totalAgents: agentsUsed.length,
-  });
   const contradictionScore = buildContradictionScore({
     turns: executedTurns,
     effectiveStanceCounts: decisionSlots.effectiveCounts,
     forcedSlotsCount: decisionSlots.forcedSlots.length,
+  });
+  const promotion = buildPromotedEvents({
+    delta,
+    stanceCounts: decisionSlots.effectiveCounts,
+    forcedSlotsCount: decisionSlots.forcedSlots.length,
+    totalAgents: agentsUsed.length,
+    contradictionScore,
+    previousActiveEvents: previousWorld.active_events,
   });
   const salienceAvg = round2(avg(memorySaliences));
   const salienceStdDev = round2(stdDev(memorySaliences, salienceAvg));
@@ -601,7 +603,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     prev: previousWorld,
     delta,
     summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
-    activeEvents: promotedEvents,
+    activeEvents: promotion.events,
   });
 
   await supabase.from("world_state").insert({
@@ -629,6 +631,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       trust: worldState.trust,
       noise: worldState.noise,
       promotedEvents: worldState.active_events,
+      eventPromotionMode: promotion.diagnostics.mode,
+      eventPromotionReasonTags: promotion.diagnostics.reasonTags,
+      eventPromotionCarryoverCount: promotion.diagnostics.carryoverCount,
+      eventPromotionSignalCount: promotion.diagnostics.promotedFromSignalsCount,
+      eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
+      eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
+      eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
       organicStanceCounts: decisionSlots.organicCounts,
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
@@ -675,6 +684,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       },
       forcedSlotsCount: decisionSlots.forcedSlots.length,
       promotedEventsCount: worldState.active_events.length,
+      eventPromotionMode: promotion.diagnostics.mode,
+      eventPromotionReasonTags: promotion.diagnostics.reasonTags,
+      eventPromotionCarryoverCount: promotion.diagnostics.carryoverCount,
+      eventPromotionSignalCount: promotion.diagnostics.promotedFromSignalsCount,
+      eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
+      eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
+      eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
       contradictionScore,
       salienceAvg,
       salienceStdDev,
@@ -983,16 +999,18 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       );
     }
 
-    const promotedEvents = buildPromotedEvents({
-      delta,
-      stanceCounts: decisionSlots.effectiveCounts,
-      forcedSlotsCount: decisionSlots.forcedSlots.length,
-      totalAgents: agentsUsed.length,
-    });
     const contradictionScore = buildContradictionScore({
       turns: executedTurns,
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
+    });
+    const promotion = buildPromotedEvents({
+      delta,
+      stanceCounts: decisionSlots.effectiveCounts,
+      forcedSlotsCount: decisionSlots.forcedSlots.length,
+      totalAgents: agentsUsed.length,
+      contradictionScore,
+      previousActiveEvents: previousWorld.active_events,
     });
     const salienceAvg = round2(avg(memorySaliences));
     const salienceStdDev = round2(stdDev(memorySaliences, salienceAvg));
@@ -1002,7 +1020,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       prev: previousWorld,
       delta,
       summary: `Cycle ${cycleNumber}: cohesion ${delta.cohesion >= 0 ? "+" : ""}${delta.cohesion.toFixed(1)}, trust ${delta.trust >= 0 ? "+" : ""}${delta.trust.toFixed(1)}, noise ${delta.noise >= 0 ? "+" : ""}${delta.noise.toFixed(1)}.`,
-      activeEvents: promotedEvents,
+      activeEvents: promotion.events,
     });
 
     store.worldStates.push(worldState);
@@ -1017,6 +1035,13 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           trust: worldState.trust,
           noise: worldState.noise,
           promotedEvents: worldState.active_events,
+          eventPromotionMode: promotion.diagnostics.mode,
+          eventPromotionReasonTags: promotion.diagnostics.reasonTags,
+          eventPromotionCarryoverCount: promotion.diagnostics.carryoverCount,
+          eventPromotionSignalCount: promotion.diagnostics.promotedFromSignalsCount,
+          eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
+          eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
+          eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
           organicStanceCounts: decisionSlots.organicCounts,
           effectiveStanceCounts: decisionSlots.effectiveCounts,
           forcedSlotsCount: decisionSlots.forcedSlots.length,
@@ -1065,6 +1090,13 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         },
         forcedSlotsCount: decisionSlots.forcedSlots.length,
         promotedEventsCount: worldState.active_events.length,
+        eventPromotionMode: promotion.diagnostics.mode,
+        eventPromotionReasonTags: promotion.diagnostics.reasonTags,
+        eventPromotionCarryoverCount: promotion.diagnostics.carryoverCount,
+        eventPromotionSignalCount: promotion.diagnostics.promotedFromSignalsCount,
+        eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
+        eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
+        eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
         contradictionScore,
         salienceAvg,
         salienceStdDev,

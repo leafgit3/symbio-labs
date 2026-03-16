@@ -184,6 +184,43 @@ export default function HistoryPage() {
                         value={String(detailsQuery.data.runSummary.diagnostics.stanceGuidanceTargetedCount ?? "-")}
                       />
                       <KeyValue label="promoted events" value={String(detailsQuery.data.runSummary.diagnostics.promotedEventsCount)} />
+                      <KeyValue label="promotion mode" value={detailsQuery.data.runSummary.diagnostics.eventPromotionMode ?? "-"} />
+                      <KeyValue
+                        label="promotion ambiguity"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionAmbiguityScore != null
+                            ? formatPercent(detailsQuery.data.runSummary.diagnostics.eventPromotionAmbiguityScore)
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="promotion carry/signal/prev"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionCarryoverCount != null &&
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionSignalCount != null &&
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionPreviousCount != null
+                            ? `${detailsQuery.data.runSummary.diagnostics.eventPromotionCarryoverCount} / ${detailsQuery.data.runSummary.diagnostics.eventPromotionSignalCount} / ${detailsQuery.data.runSummary.diagnostics.eventPromotionPreviousCount}`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="split evidence"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionSplitEvidence == null
+                            ? "-"
+                            : detailsQuery.data.runSummary.diagnostics.eventPromotionSplitEvidence
+                              ? "yes"
+                              : "no"
+                        }
+                      />
+                      <KeyValue
+                        label="promotion reasons"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.eventPromotionReasonTags?.length
+                            ? detailsQuery.data.runSummary.diagnostics.eventPromotionReasonTags.join(", ")
+                            : "-"
+                        }
+                      />
                       <KeyValue label="contradiction" value={formatPercent(detailsQuery.data.runSummary.diagnostics.contradictionScore)} />
                       <KeyValue
                         label="salience avg/std"

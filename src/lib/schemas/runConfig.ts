@@ -61,6 +61,13 @@ export const RunSummarySchema = z.object({
       llmFallbackReasonCounts: z.record(z.string(), z.number().int().nonnegative()).optional(),
       stanceGuidanceSoftCount: z.number().int().nonnegative().optional(),
       stanceGuidanceTargetedCount: z.number().int().nonnegative().optional(),
+      eventPromotionMode: z.enum(["none", "fresh", "hybrid", "carryover"]).optional(),
+      eventPromotionReasonTags: z.array(z.string()).optional(),
+      eventPromotionCarryoverCount: z.number().int().nonnegative().optional(),
+      eventPromotionSignalCount: z.number().int().nonnegative().optional(),
+      eventPromotionPreviousCount: z.number().int().nonnegative().optional(),
+      eventPromotionAmbiguityScore: z.number().min(0).max(1).optional(),
+      eventPromotionSplitEvidence: z.boolean().optional(),
     })
     .optional(),
 });
