@@ -7,6 +7,7 @@ import {
   AgentMemorySchema,
   CycleRun,
   CycleRunSchema,
+  DecisionStance,
   FeedPostSchema,
   RunCycleInput,
   RunSummary,
@@ -62,6 +63,15 @@ type ExecutedTurn = {
   turn: AgentTurnResult;
   telemetry: AgentTurnTelemetry;
 };
+
+type StanceGuidance = {
+  mode: "none" | "soft" | "targeted";
+  target?: DecisionStance;
+  missing: DecisionStance[];
+  message?: string;
+};
+
+const STANCE_ORDER: DecisionStance[] = ["escalate", "contain", "monitor"];
 
 function truncate(value: string | undefined, maxLength = 220): string | undefined {
   if (!value) {
@@ -146,6 +156,92 @@ function stdDev(values: number[], mean: number): number {
 
   const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
   return Math.sqrt(variance);
+}
+
+function emptyStanceCounts(): StanceCounts {
+  return {
+    escalate: 0,
+    contain: 0,
+    monitor: 0,
+  };
+}
+
+function countOrganicStances(turns: ExecutedTurn[]): StanceCounts {
+  const counts = emptyStanceCounts();
+  for (const item of turns) {
+    counts[item.turn.stance] += 1;
+  }
+
+  return counts;
+}
+
+function scoreAgentForGuidance(agent: Agent, target: DecisionStance, scenarioLabel: string): number {
+  const bag = `${agent.role} ${agent.goals.join(" ")} ${agent.traits.join(" ")} ${scenarioLabel}`.toLowerCase();
+
+  const roleKeywords: Record<DecisionStance, string[]> = {
+    escalate: ["surface", "rumor", "signal", "escalat", "pressure", "alert", "amplify"],
+    contain: ["contain", "coordinator", "stabil", "moderate", "guard", "continuity"],
+    monitor: ["monitor", "audit", "skeptic", "evidence", "translator", "observe", "review"],
+  };
+
+  return roleKeywords[target].reduce((score, token) => (bag.includes(token) ? score + 1 : score), 0);
+}
+
+function pickGuidanceTarget(args: {
+  agent: Agent;
+  missing: DecisionStance[];
+  scenarioLabel: string;
+}): DecisionStance {
+  return [...args.missing].sort((a, b) => {
+    const scoreA = scoreAgentForGuidance(args.agent, a, args.scenarioLabel);
+    const scoreB = scoreAgentForGuidance(args.agent, b, args.scenarioLabel);
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
+    }
+
+    return STANCE_ORDER.indexOf(a) - STANCE_ORDER.indexOf(b);
+  })[0];
+}
+
+function buildStanceGuidance(args: {
+  agent: Agent;
+  executedTurns: ExecutedTurn[];
+  totalAgents: number;
+  scenarioLabel: string;
+}): StanceGuidance {
+  const organicCounts = countOrganicStances(args.executedTurns);
+  const missing = STANCE_ORDER.filter((stance) => organicCounts[stance] === 0);
+
+  if (!missing.length) {
+    return {
+      mode: "none",
+      missing,
+    };
+  }
+
+  const remainingAgents = Math.max(0, args.totalAgents - args.executedTurns.length);
+  const mode: StanceGuidance["mode"] = remainingAgents <= missing.length + 1 ? "targeted" : "soft";
+  const target = pickGuidanceTarget({
+    agent: args.agent,
+    missing,
+    scenarioLabel: args.scenarioLabel,
+  });
+
+  if (mode === "targeted") {
+    return {
+      mode,
+      target,
+      missing,
+      message: `Cycle guardrail: missing stances ${missing.join(", ")}. For this turn prefer stance=\"${target}\" to preserve diversity coverage.`,
+    };
+  }
+
+  return {
+    mode,
+    target,
+    missing,
+    message: `Cycle currently lacks stances ${missing.join(", ")}. If evidence allows, prefer stance=\"${target}\" while staying role-consistent.`,
+  };
 }
 
 export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResult> {
@@ -262,6 +358,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   let llmSuccessCount = 0;
   let llmSchemaRepairCount = 0;
   const llmFallbackReasonCounts: Record<string, number> = {};
+  let stanceGuidanceSoftCount = 0;
+  let stanceGuidanceTargetedCount = 0;
 
   for (const effectiveAgent of agentsUsed) {
     const recentFeedResult = await supabase
@@ -290,11 +388,25 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     const recentFeed = (recentFeedResult.data ?? []).map((row) => row.content);
     const recentMemories = (recentMemoriesResult.data ?? []).map((row) => row.content);
 
+    const stanceGuidance = buildStanceGuidance({
+      agent: effectiveAgent,
+      executedTurns,
+      totalAgents: agentsUsed.length,
+      scenarioLabel,
+    });
+
+    if (stanceGuidance.mode === "soft") {
+      stanceGuidanceSoftCount += 1;
+    } else if (stanceGuidance.mode === "targeted") {
+      stanceGuidanceTargetedCount += 1;
+    }
+
     const execution = await runAgentTurn(effectiveAgent, {
       worldBrief: worldBriefUsed,
       worldSummary: previousWorld.summary,
       recentFeed,
       recentMemories,
+      stanceGuidance: stanceGuidance.message,
     });
     const turn = execution.turn;
     executedTurns.push({
@@ -339,6 +451,9 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
         llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
         llmRepaired: execution.telemetry.llmRepaired ?? false,
         llmAttempts: execution.telemetry.llmAttempts ?? null,
+        stanceGuidanceMode: stanceGuidance.mode,
+        stanceGuidanceTarget: stanceGuidance.target ?? null,
+        stanceGuidanceMissing: stanceGuidance.missing,
         role: effectiveAgent.role,
         goals: effectiveAgent.goals,
         traits: effectiveAgent.traits,
@@ -524,6 +639,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       llmSuccessCount,
       llmSchemaRepairCount,
       llmFallbackReasonCounts,
+      stanceGuidanceSoftCount,
+      stanceGuidanceTargetedCount,
       worldBriefUsed,
       scenarioLabel,
     },
@@ -565,6 +682,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       llmSuccessCount,
       llmSchemaRepairCount,
       llmFallbackReasonCounts,
+      stanceGuidanceSoftCount,
+      stanceGuidanceTargetedCount,
     },
   });
 
@@ -670,6 +789,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
     let llmSuccessCount = 0;
     let llmSchemaRepairCount = 0;
     const llmFallbackReasonCounts: Record<string, number> = {};
+    let stanceGuidanceSoftCount = 0;
+    let stanceGuidanceTargetedCount = 0;
 
     for (const effectiveAgent of agentsUsed) {
       const persistedAgent = store.agents.find((agent) => agent.id === effectiveAgent.id);
@@ -688,11 +809,25 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         .slice(0, 6)
         .map((memory) => memory.content);
 
+      const stanceGuidance = buildStanceGuidance({
+        agent: effectiveAgent,
+        executedTurns,
+        totalAgents: agentsUsed.length,
+        scenarioLabel,
+      });
+
+      if (stanceGuidance.mode === "soft") {
+        stanceGuidanceSoftCount += 1;
+      } else if (stanceGuidance.mode === "targeted") {
+        stanceGuidanceTargetedCount += 1;
+      }
+
       const execution = await runAgentTurn(effectiveAgent, {
         worldBrief: worldBriefUsed,
         worldSummary: previousWorld.summary,
         recentFeed,
         recentMemories,
+        stanceGuidance: stanceGuidance.message,
       });
       const turn = execution.turn;
       executedTurns.push({
@@ -735,6 +870,9 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
             llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
             llmRepaired: execution.telemetry.llmRepaired ?? false,
             llmAttempts: execution.telemetry.llmAttempts ?? null,
+            stanceGuidanceMode: stanceGuidance.mode,
+            stanceGuidanceTarget: stanceGuidance.target ?? null,
+            stanceGuidanceMissing: stanceGuidance.missing,
             role: effectiveAgent.role,
             goals: effectiveAgent.goals,
             traits: effectiveAgent.traits,
@@ -889,6 +1027,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           llmSuccessCount,
           llmSchemaRepairCount,
           llmFallbackReasonCounts,
+          stanceGuidanceSoftCount,
+          stanceGuidanceTargetedCount,
           worldBriefUsed,
           scenarioLabel,
         },
@@ -932,6 +1072,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         llmSuccessCount,
         llmSchemaRepairCount,
         llmFallbackReasonCounts,
+        stanceGuidanceSoftCount,
+        stanceGuidanceTargetedCount,
       },
     });
 
