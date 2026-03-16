@@ -69,6 +69,7 @@ Primary app URL: `http://localhost:3000/dashboard`
 - LLM runtime observability:
   - each `agent_action` event now includes `outputSource`, `llmAttempted`, `llmModel`, and LLM error metadata when fallback is used
   - fallback/error transitions are recorded as `minor_event_created` with payload `kind: "llm_fallback"`
+  - structured-output retry/repair is applied before local fallback, with repair/failure counters persisted in cycle diagnostics
 
 Related migration:
 - `supabase/migrations/20260315104000_cycle_summary_diagnostics.sql`

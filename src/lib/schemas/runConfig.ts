@@ -57,6 +57,8 @@ export const RunSummarySchema = z.object({
       salienceStdDev: z.number().min(0).max(1),
       llmFallbackCount: z.number().int().nonnegative().optional(),
       llmSuccessCount: z.number().int().nonnegative().optional(),
+      llmSchemaRepairCount: z.number().int().nonnegative().optional(),
+      llmFallbackReasonCounts: z.record(z.string(), z.number().int().nonnegative()).optional(),
     })
     .optional(),
 });

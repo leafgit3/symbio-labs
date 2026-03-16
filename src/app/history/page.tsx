@@ -183,6 +183,11 @@ export default function HistoryPage() {
                       />
                       <KeyValue label="llm fallback turns" value={String(detailsQuery.data.runSummary.diagnostics.llmFallbackCount ?? "-")} />
                       <KeyValue label="llm successful turns" value={String(detailsQuery.data.runSummary.diagnostics.llmSuccessCount ?? "-")} />
+                      <KeyValue label="llm schema repairs" value={String(detailsQuery.data.runSummary.diagnostics.llmSchemaRepairCount ?? "-")} />
+                      <KeyValue
+                        label="fallback reasons"
+                        value={formatReasonCounts(detailsQuery.data.runSummary.diagnostics.llmFallbackReasonCounts)}
+                      />
                     </div>
                   </div>
                 ) : (
@@ -285,6 +290,22 @@ function formatDelta(value: number): string {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatReasonCounts(value: Record<string, number> | undefined): string {
+  if (!value) {
+    return "-";
+  }
+
+  const entries = Object.entries(value);
+  if (!entries.length) {
+    return "-";
+  }
+
+  return entries
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, count]) => `${key}:${count}`)
+    .join(" ");
 }
 
 function KeyValue({ label, value }: { label: string; value: string }) {

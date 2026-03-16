@@ -260,6 +260,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
   const memorySaliences: number[] = [];
   let llmFallbackCount = 0;
   let llmSuccessCount = 0;
+  let llmSchemaRepairCount = 0;
+  const llmFallbackReasonCounts: Record<string, number> = {};
 
   for (const effectiveAgent of agentsUsed) {
     const recentFeedResult = await supabase
@@ -303,8 +305,13 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
 
     if (execution.telemetry.outputSource === "fallback") {
       llmFallbackCount += 1;
+      const code = execution.telemetry.llmErrorCode ?? "unknown_error";
+      llmFallbackReasonCounts[code] = (llmFallbackReasonCounts[code] ?? 0) + 1;
     } else {
       llmSuccessCount += 1;
+      if (execution.telemetry.llmRepaired) {
+        llmSchemaRepairCount += 1;
+      }
     }
 
     const actionTimestamp = new Date().toISOString();
@@ -330,6 +337,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
         llmModel: execution.telemetry.llmModel,
         llmErrorCode: execution.telemetry.llmErrorCode,
         llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+        llmRepaired: execution.telemetry.llmRepaired ?? false,
+        llmAttempts: execution.telemetry.llmAttempts ?? null,
         role: effectiveAgent.role,
         goals: effectiveAgent.goals,
         traits: effectiveAgent.traits,
@@ -352,6 +361,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
           llmModel: execution.telemetry.llmModel,
           llmErrorCode: execution.telemetry.llmErrorCode,
           llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+          llmAttempts: execution.telemetry.llmAttempts ?? null,
           actionType: turn.actionType,
           stance: turn.stance,
           confidence: turn.confidence ?? null,
@@ -512,6 +522,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       salienceStdDev,
       llmFallbackCount,
       llmSuccessCount,
+      llmSchemaRepairCount,
+      llmFallbackReasonCounts,
       worldBriefUsed,
       scenarioLabel,
     },
@@ -551,6 +563,8 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       salienceStdDev,
       llmFallbackCount,
       llmSuccessCount,
+      llmSchemaRepairCount,
+      llmFallbackReasonCounts,
     },
   });
 
@@ -654,6 +668,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
     const memorySaliences: number[] = [];
     let llmFallbackCount = 0;
     let llmSuccessCount = 0;
+    let llmSchemaRepairCount = 0;
+    const llmFallbackReasonCounts: Record<string, number> = {};
 
     for (const effectiveAgent of agentsUsed) {
       const persistedAgent = store.agents.find((agent) => agent.id === effectiveAgent.id);
@@ -687,8 +703,13 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
 
       if (execution.telemetry.outputSource === "fallback") {
         llmFallbackCount += 1;
+        const code = execution.telemetry.llmErrorCode ?? "unknown_error";
+        llmFallbackReasonCounts[code] = (llmFallbackReasonCounts[code] ?? 0) + 1;
       } else {
         llmSuccessCount += 1;
+        if (execution.telemetry.llmRepaired) {
+          llmSchemaRepairCount += 1;
+        }
       }
       const actionTimestamp = new Date().toISOString();
 
@@ -712,6 +733,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
             llmModel: execution.telemetry.llmModel,
             llmErrorCode: execution.telemetry.llmErrorCode,
             llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+            llmRepaired: execution.telemetry.llmRepaired ?? false,
+            llmAttempts: execution.telemetry.llmAttempts ?? null,
             role: effectiveAgent.role,
             goals: effectiveAgent.goals,
             traits: effectiveAgent.traits,
@@ -733,6 +756,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
               llmModel: execution.telemetry.llmModel,
               llmErrorCode: execution.telemetry.llmErrorCode,
               llmErrorDetail: truncate(execution.telemetry.llmErrorDetail),
+              llmAttempts: execution.telemetry.llmAttempts ?? null,
               actionType: turn.actionType,
               stance: turn.stance,
               confidence: turn.confidence ?? null,
@@ -863,6 +887,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           salienceStdDev,
           llmFallbackCount,
           llmSuccessCount,
+          llmSchemaRepairCount,
+          llmFallbackReasonCounts,
           worldBriefUsed,
           scenarioLabel,
         },
@@ -904,6 +930,8 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         salienceStdDev,
         llmFallbackCount,
         llmSuccessCount,
+        llmSchemaRepairCount,
+        llmFallbackReasonCounts,
       },
     });
 
