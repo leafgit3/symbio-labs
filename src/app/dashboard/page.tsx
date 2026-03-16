@@ -465,6 +465,34 @@ export default function DashboardPage() {
                     }
                   />
                   <KeyValue
+                    label="role drift mean/max"
+                    value={
+                      latestDiagnostics.roleDriftMeanOverlap != null && latestDiagnostics.roleDriftMaxOverlap != null
+                        ? `${formatPercent(latestDiagnostics.roleDriftMeanOverlap)} / ${formatPercent(latestDiagnostics.roleDriftMaxOverlap)}`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
+                    label="role drift high pairs"
+                    value={String(latestDiagnostics.roleDriftHighPairCount ?? "-")}
+                  />
+                  <KeyValue
+                    label="role drift flagged"
+                    value={
+                      latestDiagnostics.roleDriftFlaggedAgents?.length
+                        ? latestDiagnostics.roleDriftFlaggedAgents.map((item) => `${item.name}(${Math.round(item.maxOverlap * 100)}%)`).join(", ")
+                        : "-"
+                    }
+                  />
+                  <KeyValue
+                    label="role drift top pair"
+                    value={
+                      latestDiagnostics.roleDriftTopPairs?.length
+                        ? `${latestDiagnostics.roleDriftTopPairs[0].agentAName} <> ${latestDiagnostics.roleDriftTopPairs[0].agentBName} (${Math.round(latestDiagnostics.roleDriftTopPairs[0].overlap * 100)}%)`
+                        : "-"
+                    }
+                  />
+                  <KeyValue
                     label="promotion reasons"
                     value={latestDiagnostics.eventPromotionReasonTags?.length ? latestDiagnostics.eventPromotionReasonTags.join(", ") : "-"}
                   />

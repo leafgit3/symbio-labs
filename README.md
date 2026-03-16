@@ -69,7 +69,7 @@ Primary app URL: `http://localhost:3000/dashboard`
   - diagnostics keep both raw and adjusted deltas for auditability
 - Diagnostics surface:
   - per-cycle diagnostics persisted in `cycle_run_summaries.diagnostics`
-  - Dashboard + History show stance counts, stance guidance counts (`soft` / `targeted`), event-promotion diagnostics (mode, ambiguity score, carryover/signal split, reason tags), forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts
+  - Dashboard + History show stance counts, stance guidance counts (`soft` / `targeted`), event-promotion diagnostics (mode, ambiguity score, carryover/signal split, reason tags), role-drift diagnostics (mean/max overlap, high pairs, top pair, flagged agents), forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts
 - LLM runtime observability:
   - each `agent_action` event now includes `outputSource`, `llmAttempted`, `llmModel`, and LLM error metadata when fallback is used
   - fallback/error transitions are recorded as `minor_event_created` with payload `kind: "llm_fallback"`

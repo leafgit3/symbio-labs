@@ -252,6 +252,37 @@ export default function HistoryPage() {
                         }
                       />
                       <KeyValue
+                        label="role drift mean/max"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.roleDriftMeanOverlap != null &&
+                          detailsQuery.data.runSummary.diagnostics.roleDriftMaxOverlap != null
+                            ? `${formatPercent(detailsQuery.data.runSummary.diagnostics.roleDriftMeanOverlap)} / ${formatPercent(detailsQuery.data.runSummary.diagnostics.roleDriftMaxOverlap)}`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="role drift high pairs"
+                        value={String(detailsQuery.data.runSummary.diagnostics.roleDriftHighPairCount ?? "-")}
+                      />
+                      <KeyValue
+                        label="role drift flagged"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.roleDriftFlaggedAgents?.length
+                            ? detailsQuery.data.runSummary.diagnostics.roleDriftFlaggedAgents
+                                .map((item) => `${item.name}(${Math.round(item.maxOverlap * 100)}%)`)
+                                .join(", ")
+                            : "-"
+                        }
+                      />
+                      <KeyValue
+                        label="role drift top pair"
+                        value={
+                          detailsQuery.data.runSummary.diagnostics.roleDriftTopPairs?.length
+                            ? `${detailsQuery.data.runSummary.diagnostics.roleDriftTopPairs[0].agentAName} <> ${detailsQuery.data.runSummary.diagnostics.roleDriftTopPairs[0].agentBName} (${Math.round(detailsQuery.data.runSummary.diagnostics.roleDriftTopPairs[0].overlap * 100)}%)`
+                            : "-"
+                        }
+                      />
+                      <KeyValue
                         label="promotion reasons"
                         value={
                           detailsQuery.data.runSummary.diagnostics.eventPromotionReasonTags?.length
