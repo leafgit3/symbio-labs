@@ -68,6 +68,31 @@ export const RunSummarySchema = z.object({
       eventPromotionPreviousCount: z.number().int().nonnegative().optional(),
       eventPromotionAmbiguityScore: z.number().min(0).max(1).optional(),
       eventPromotionSplitEvidence: z.boolean().optional(),
+      roleDriftMeanOverlap: z.number().min(0).max(1).optional(),
+      roleDriftMaxOverlap: z.number().min(0).max(1).optional(),
+      roleDriftHighPairCount: z.number().int().nonnegative().optional(),
+      roleDriftTopPairs: z
+        .array(
+          z.object({
+            agentAId: z.string().uuid(),
+            agentAName: z.string(),
+            agentBId: z.string().uuid(),
+            agentBName: z.string(),
+            overlap: z.number().min(0).max(1),
+          }),
+        )
+        .max(5)
+        .optional(),
+      roleDriftFlaggedAgents: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            name: z.string(),
+            maxOverlap: z.number().min(0).max(1),
+          }),
+        )
+        .max(20)
+        .optional(),
       envelopeApplied: z.boolean().optional(),
       trustDeltaRaw: z.number().optional(),
       trustDeltaAdjusted: z.number().optional(),

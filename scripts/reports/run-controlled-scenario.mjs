@@ -184,6 +184,11 @@ function buildMarkdown(report) {
         `- Forced slots: ${cycle.forcedSlotsCount}`,
         `- Contradiction: ${Math.round(cycle.contradictionScore * 100)}%`,
         `- Salience avg/std: ${cycle.salienceAvg.toFixed(2)} / ${cycle.salienceStdDev.toFixed(2)}`,
+        `- Role drift mean/max: ${Math.round(cycle.roleDriftMeanOverlap * 100)}% / ${Math.round(cycle.roleDriftMaxOverlap * 100)}%`,
+        `- Role drift high pairs: ${cycle.roleDriftHighPairCount}`,
+        cycle.roleDriftTopPairs.length
+          ? `- Role drift top pair: ${cycle.roleDriftTopPairs[0].agentAName} <> ${cycle.roleDriftTopPairs[0].agentBName} (${Math.round(cycle.roleDriftTopPairs[0].overlap * 100)}%)`
+          : "- Role drift top pair: none",
         `- Delta: c${formatDelta(cycle.delta.cohesion)} t${formatDelta(cycle.delta.trust)} n${formatDelta(cycle.delta.noise)}`,
         `- LLM turns success/fallback: ${cycle.llmSuccessCount}/${cycle.llmFallbackCount}`,
         cycle.fallbackEvents.length
@@ -215,6 +220,8 @@ function buildMarkdown(report) {
     `- Forced-slot cycles: ${report.aggregate.forcedSlotCycles}/${report.aggregate.totalCycles} (${Math.round(report.aggregate.forcedSlotRate * 100)}%)`,
     `- Mean contradiction: ${report.aggregate.meanContradiction.toFixed(2)}`,
     `- Mean salience avg/std: ${report.aggregate.meanSalienceAvg.toFixed(2)} / ${report.aggregate.meanSalienceStdDev.toFixed(2)}`,
+    `- Mean role-drift overlap/max: ${report.aggregate.meanRoleDriftMean.toFixed(2)} / ${report.aggregate.maxRoleDriftMax.toFixed(2)}`,
+    `- Cycles with high drift pairs: ${report.aggregate.cyclesWithHighRoleDrift}/${report.aggregate.totalCycles}`,
     `- Mean delta (c/t/n): ${report.aggregate.meanDelta.cohesion.toFixed(2)} / ${report.aggregate.meanDelta.trust.toFixed(2)} / ${report.aggregate.meanDelta.noise.toFixed(2)}`,
     `- Total LLM success/fallback turns: ${report.aggregate.totalLlmSuccessTurns}/${report.aggregate.totalLlmFallbackTurns}`,
     "",
@@ -319,6 +326,10 @@ async function main() {
       contradictionScore: diagnostics?.contradictionScore ?? 0,
       salienceAvg: diagnostics?.salienceAvg ?? 0,
       salienceStdDev: diagnostics?.salienceStdDev ?? 0,
+      roleDriftMeanOverlap: diagnostics?.roleDriftMeanOverlap ?? 0,
+      roleDriftMaxOverlap: diagnostics?.roleDriftMaxOverlap ?? 0,
+      roleDriftHighPairCount: diagnostics?.roleDriftHighPairCount ?? 0,
+      roleDriftTopPairs: Array.isArray(diagnostics?.roleDriftTopPairs) ? diagnostics.roleDriftTopPairs : [],
       delta: runResult?.runSummary?.delta ?? { cohesion: 0, trust: 0, noise: 0 },
       llmSuccessCount: diagnostics?.llmSuccessCount ?? 0,
       llmFallbackCount: diagnostics?.llmFallbackCount ?? 0,
@@ -328,7 +339,7 @@ async function main() {
     cycleRecords.push(cycleRecord);
 
     console.log(
-      `Cycle ${cycleRecord.cycleNumber}: events=${cycleRecord.activeEventsCount} organic=${cycleRecord.organic.escalate}/${cycleRecord.organic.contain}/${cycleRecord.organic.monitor} forced=${cycleRecord.forcedSlotsCount} contradiction=${round(cycleRecord.contradictionScore)} salience=${round(cycleRecord.salienceAvg)}/${round(cycleRecord.salienceStdDev)} delta=${formatDelta(cycleRecord.delta.cohesion)}/${formatDelta(cycleRecord.delta.trust)}/${formatDelta(cycleRecord.delta.noise)} llm=${cycleRecord.llmSuccessCount}/${cycleRecord.llmFallbackCount}`,
+      `Cycle ${cycleRecord.cycleNumber}: events=${cycleRecord.activeEventsCount} organic=${cycleRecord.organic.escalate}/${cycleRecord.organic.contain}/${cycleRecord.organic.monitor} forced=${cycleRecord.forcedSlotsCount} contradiction=${round(cycleRecord.contradictionScore)} salience=${round(cycleRecord.salienceAvg)}/${round(cycleRecord.salienceStdDev)} drift=${round(cycleRecord.roleDriftMeanOverlap)}/${round(cycleRecord.roleDriftMaxOverlap)} highPairs=${cycleRecord.roleDriftHighPairCount} delta=${formatDelta(cycleRecord.delta.cohesion)}/${formatDelta(cycleRecord.delta.trust)}/${formatDelta(cycleRecord.delta.noise)} llm=${cycleRecord.llmSuccessCount}/${cycleRecord.llmFallbackCount}`,
     );
 
     if (i < args.cycles - 1 && args.pauseMs > 0) {
@@ -343,6 +354,9 @@ async function main() {
     meanContradiction: round(avg(cycleRecords.map((item) => item.contradictionScore))),
     meanSalienceAvg: round(avg(cycleRecords.map((item) => item.salienceAvg))),
     meanSalienceStdDev: round(avg(cycleRecords.map((item) => item.salienceStdDev))),
+    meanRoleDriftMean: round(avg(cycleRecords.map((item) => item.roleDriftMeanOverlap))),
+    maxRoleDriftMax: round(Math.max(...cycleRecords.map((item) => item.roleDriftMaxOverlap), 0)),
+    cyclesWithHighRoleDrift: cycleRecords.filter((item) => item.roleDriftHighPairCount > 0).length,
     meanDelta: {
       cohesion: round(avg(cycleRecords.map((item) => item.delta.cohesion))),
       trust: round(avg(cycleRecords.map((item) => item.delta.trust))),
@@ -372,7 +386,7 @@ async function main() {
   report.abstract = [
     `This controlled scenario run executed ${report.cycles.length} cycles with fixed agents and a single world-brief perturbation.` ,
     `Active events appeared in ${report.aggregate.activeEventCycles}/${report.aggregate.totalCycles} cycles, while forced slots appeared in ${report.aggregate.forcedSlotCycles}/${report.aggregate.totalCycles} cycles.` ,
-    `Mean contradiction was ${report.aggregate.meanContradiction.toFixed(2)} and mean salience spread was ${report.aggregate.meanSalienceStdDev.toFixed(2)}.` ,
+    `Mean contradiction was ${report.aggregate.meanContradiction.toFixed(2)}, mean salience spread was ${report.aggregate.meanSalienceStdDev.toFixed(2)}, and mean role-drift overlap was ${report.aggregate.meanRoleDriftMean.toFixed(2)}.` ,
     `The run is currently classified as '${report.verdict.status}' based on baseline robustness gates.` ,
   ].join(" ");
 

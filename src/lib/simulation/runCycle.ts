@@ -64,6 +64,20 @@ type ExecutedTurn = {
   telemetry: AgentTurnTelemetry;
 };
 
+type RoleDriftPair = {
+  agentAId: string;
+  agentAName: string;
+  agentBId: string;
+  agentBName: string;
+  overlap: number;
+};
+
+type RoleDriftAgent = {
+  id: string;
+  name: string;
+  maxOverlap: number;
+};
+
 type AggregateDelta = {
   cohesion: number;
   trust: number;
@@ -145,6 +159,83 @@ function buildContradictionScore(args: {
 
   const raw = mismatchAvg * 0.55 + entropy * 0.35 + forcedFactor * 0.1;
   return round2(Math.min(1, Math.max(0, raw)));
+}
+
+function buildRoleDriftDiagnostics(turns: ExecutedTurn[]): {
+  meanOverlap: number;
+  maxOverlap: number;
+  highPairCount: number;
+  topPairs: RoleDriftPair[];
+  flaggedAgents: RoleDriftAgent[];
+} {
+  if (turns.length < 2) {
+    return {
+      meanOverlap: 0,
+      maxOverlap: 0,
+      highPairCount: 0,
+      topPairs: [],
+      flaggedAgents: [],
+    };
+  }
+
+  const snippets = turns.map((item) => ({
+    id: item.agent.id,
+    name: item.agent.name,
+    text: `${item.turn.memoryContent} ${item.turn.postContent ?? ""}`.trim(),
+  }));
+
+  const nearest = new Map<string, RoleDriftAgent>();
+  for (const snippet of snippets) {
+    nearest.set(snippet.id, { id: snippet.id, name: snippet.name, maxOverlap: 0 });
+  }
+
+  let pairCount = 0;
+  let overlapSum = 0;
+  let maxOverlap = 0;
+  let highPairCount = 0;
+  const pairs: RoleDriftPair[] = [];
+
+  for (let i = 0; i < snippets.length; i += 1) {
+    for (let j = i + 1; j < snippets.length; j += 1) {
+      const a = snippets[i];
+      const b = snippets[j];
+      const overlap = round2(tokenOverlap(a.text, b.text));
+
+      pairs.push({
+        agentAId: a.id,
+        agentAName: a.name,
+        agentBId: b.id,
+        agentBName: b.name,
+        overlap,
+      });
+
+      pairCount += 1;
+      overlapSum += overlap;
+      maxOverlap = Math.max(maxOverlap, overlap);
+      if (overlap >= 0.55) {
+        highPairCount += 1;
+      }
+
+      const nearestA = nearest.get(a.id);
+      if (nearestA && overlap > nearestA.maxOverlap) {
+        nearestA.maxOverlap = overlap;
+      }
+      const nearestB = nearest.get(b.id);
+      if (nearestB && overlap > nearestB.maxOverlap) {
+        nearestB.maxOverlap = overlap;
+      }
+    }
+  }
+
+  return {
+    meanOverlap: round2(pairCount > 0 ? overlapSum / pairCount : 0),
+    maxOverlap: round2(maxOverlap),
+    highPairCount,
+    topPairs: pairs.sort((a, b) => b.overlap - a.overlap).slice(0, 3),
+    flaggedAgents: Array.from(nearest.values())
+      .filter((agent) => agent.maxOverlap >= 0.55)
+      .sort((a, b) => b.maxOverlap - a.maxOverlap),
+  };
 }
 
 function avg(values: number[]): number {
@@ -659,6 +750,7 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     effectiveStanceCounts: decisionSlots.effectiveCounts,
     forcedSlotsCount: decisionSlots.forcedSlots.length,
   });
+  const roleDrift = buildRoleDriftDiagnostics(executedTurns);
   const envelope = applyTrustNoiseEnvelope({
     rawDelta: delta,
     previousWorld,
@@ -697,6 +789,25 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
     updated_at: worldState.updated_at,
   });
 
+  if (roleDrift.highPairCount > 0) {
+    await supabase.from("event_logs").insert({
+      id: crypto.randomUUID(),
+      session_id: sessionId,
+      cycle_number: cycleNumber,
+      event_type: "minor_event_created",
+      source_agent_id: null,
+      summary: `Role drift signal detected (${roleDrift.highPairCount} high-overlap pair${roleDrift.highPairCount === 1 ? "" : "s"}).`,
+      payload: {
+        kind: "role_drift_signal",
+        roleDriftMeanOverlap: roleDrift.meanOverlap,
+        roleDriftMaxOverlap: roleDrift.maxOverlap,
+        roleDriftHighPairCount: roleDrift.highPairCount,
+        roleDriftTopPairs: roleDrift.topPairs,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+
   await supabase.from("event_logs").insert({
     id: crypto.randomUUID(),
     session_id: sessionId,
@@ -716,6 +827,11 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
       eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
       eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+      roleDriftMeanOverlap: roleDrift.meanOverlap,
+      roleDriftMaxOverlap: roleDrift.maxOverlap,
+      roleDriftHighPairCount: roleDrift.highPairCount,
+      roleDriftTopPairs: roleDrift.topPairs,
+      roleDriftFlaggedAgents: roleDrift.flaggedAgents,
       envelopeApplied: envelope.diagnostics.envelopeApplied,
       trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
       trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
@@ -777,6 +893,11 @@ export async function runCycle(input: RunCycleInput = {}): Promise<RunCycleResul
       eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
       eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
       eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+      roleDriftMeanOverlap: roleDrift.meanOverlap,
+      roleDriftMaxOverlap: roleDrift.maxOverlap,
+      roleDriftHighPairCount: roleDrift.highPairCount,
+      roleDriftTopPairs: roleDrift.topPairs,
+      roleDriftFlaggedAgents: roleDrift.flaggedAgents,
       envelopeApplied: envelope.diagnostics.envelopeApplied,
       trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
       trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
@@ -1098,6 +1219,7 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
       effectiveStanceCounts: decisionSlots.effectiveCounts,
       forcedSlotsCount: decisionSlots.forcedSlots.length,
     });
+    const roleDrift = buildRoleDriftDiagnostics(executedTurns);
     const envelope = applyTrustNoiseEnvelope({
       rawDelta: delta,
       previousWorld,
@@ -1125,6 +1247,23 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
 
     store.worldStates.push(worldState);
 
+    if (roleDrift.highPairCount > 0) {
+      store.eventLogs.push(
+        buildEvent({
+          cycleNumber,
+          eventType: "minor_event_created",
+          summary: `Role drift signal detected (${roleDrift.highPairCount} high-overlap pair${roleDrift.highPairCount === 1 ? "" : "s"}).`,
+          payload: {
+            kind: "role_drift_signal",
+            roleDriftMeanOverlap: roleDrift.meanOverlap,
+            roleDriftMaxOverlap: roleDrift.maxOverlap,
+            roleDriftHighPairCount: roleDrift.highPairCount,
+            roleDriftTopPairs: roleDrift.topPairs,
+          },
+        }),
+      );
+    }
+
     store.eventLogs.push(
       buildEvent({
         cycleNumber,
@@ -1142,6 +1281,11 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
           eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
           eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
           eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+          roleDriftMeanOverlap: roleDrift.meanOverlap,
+          roleDriftMaxOverlap: roleDrift.maxOverlap,
+          roleDriftHighPairCount: roleDrift.highPairCount,
+          roleDriftTopPairs: roleDrift.topPairs,
+          roleDriftFlaggedAgents: roleDrift.flaggedAgents,
           envelopeApplied: envelope.diagnostics.envelopeApplied,
           trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
           trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
@@ -1205,6 +1349,11 @@ async function runCycleInMemory(input: RunCycleInput): Promise<RunCycleResult> {
         eventPromotionPreviousCount: promotion.diagnostics.previousActiveEventsCount,
         eventPromotionAmbiguityScore: promotion.diagnostics.ambiguityScore,
         eventPromotionSplitEvidence: promotion.diagnostics.splitEvidenceDetected,
+        roleDriftMeanOverlap: roleDrift.meanOverlap,
+        roleDriftMaxOverlap: roleDrift.maxOverlap,
+        roleDriftHighPairCount: roleDrift.highPairCount,
+        roleDriftTopPairs: roleDrift.topPairs,
+        roleDriftFlaggedAgents: roleDrift.flaggedAgents,
         envelopeApplied: envelope.diagnostics.envelopeApplied,
         trustDeltaRaw: envelope.diagnostics.trustDeltaRaw,
         trustDeltaAdjusted: envelope.diagnostics.trustDeltaAdjusted,
