@@ -1,0 +1,91 @@
+{
+  "reportId": "",
+  "date": "",
+  "operator": "",
+  "appUrl": "",
+  "sessionId": "",
+  "baselineReference": "",
+  "abstract": "",
+  "method": {
+    "agentProfilePolicy": "",
+    "scenarioCount": 0,
+    "cyclesPerScenario": 5,
+    "resetPolicy": "",
+    "dataSources": []
+  },
+  "llmConfig": {
+    "provider": "",
+    "model": "",
+    "tokenLimit": null,
+    "temperature": null,
+    "topP": null,
+    "topK": null
+  },
+  "objective": {
+    "primary": "",
+    "secondary": ""
+  },
+  "scenarios": [
+    {
+      "label": "",
+      "cycles": 5,
+      "worldBriefDelta": "",
+      "variationReason": "",
+      "cycleMetrics": [
+        {
+          "cycle": 1,
+          "activeEventsCount": 0,
+          "activeEvents": [],
+          "stanceCounts": {
+            "organic": { "escalate": 0, "contain": 0, "monitor": 0 },
+            "effective": { "escalate": 0, "contain": 0, "monitor": 0 }
+          },
+          "forcedSlotsCount": 0,
+          "forcedSlotsDetail": [],
+          "contradictionScore": 0,
+          "salienceAvg": 0,
+          "salienceStdDev": 0,
+          "delta": { "cohesion": 0, "trust": 0, "noise": 0 },
+          "llmSuccessCount": 0,
+          "llmFallbackCount": 0
+        }
+      ],
+      "aggregate": {
+        "activeEventCycles": "",
+        "forcedSlotCycles": "",
+        "meanContradiction": 0,
+        "meanSalienceAvg": 0,
+        "meanSalienceStdDev": 0,
+        "meanDelta": { "cohesion": 0, "trust": 0, "noise": 0 }
+      }
+    }
+  ],
+  "analysis": {
+    "activeEventPromotion": "",
+    "organicVsForced": "",
+    "stanceDistribution": "",
+    "contradictionAndSalience": "",
+    "trustNoiseCohesion": "",
+    "feedVsMemory": "",
+    "roleDrift": "",
+    "scenarioSensitivity": ""
+  },
+  "scenarioPerturbations": [
+    {
+      "label": "",
+      "intent": "",
+      "worldBriefDelta": "",
+      "whyItMatters": ""
+    }
+  ],
+  "verdict": {
+    "status": "holding",
+    "confidence": "",
+    "reason": ""
+  },
+  "nextAction": {
+    "tuningChanges": [],
+    "additionalTests": [],
+    "proceedToNextPhase": false
+  }
+}
