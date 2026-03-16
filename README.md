@@ -64,6 +64,9 @@ Primary app URL: `http://localhost:3000/dashboard`
 - Salience stratification:
   - memory salience is dynamic (no longer flat `0.65`)
   - salience now reacts to novelty/contradiction/mismatch signals
+- Trust/noise envelope:
+  - trust/noise deltas are damped/clamped per cycle stage to reduce early volatility spikes
+  - diagnostics keep both raw and adjusted deltas for auditability
 - Diagnostics surface:
   - per-cycle diagnostics persisted in `cycle_run_summaries.diagnostics`
   - Dashboard + History show stance counts, stance guidance counts (`soft` / `targeted`), event-promotion diagnostics (mode, ambiguity score, carryover/signal split, reason tags), forced slots, promoted events, contradiction score, salience avg/stddev, and LLM fallback/success counts

@@ -68,6 +68,14 @@ export const RunSummarySchema = z.object({
       eventPromotionPreviousCount: z.number().int().nonnegative().optional(),
       eventPromotionAmbiguityScore: z.number().min(0).max(1).optional(),
       eventPromotionSplitEvidence: z.boolean().optional(),
+      envelopeApplied: z.boolean().optional(),
+      trustDeltaRaw: z.number().optional(),
+      trustDeltaAdjusted: z.number().optional(),
+      noiseDeltaRaw: z.number().optional(),
+      noiseDeltaAdjusted: z.number().optional(),
+      envelopeDampingFactor: z.number().min(0).max(1).optional(),
+      trustDeltaClamp: z.number().positive().optional(),
+      noiseDeltaClamp: z.number().positive().optional(),
     })
     .optional(),
 });
